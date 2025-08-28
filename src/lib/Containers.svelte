@@ -24,7 +24,7 @@
     )
 
     return Object.entries(speciesCount)
-      .map(([species, count]) => `${count} ${species}${count > 1 ? 's' : ''}`)
+      .map(([species, count]) => `${count} ${species}`)
       .join(', ')
   }
 
