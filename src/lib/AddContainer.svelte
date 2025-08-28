@@ -47,7 +47,7 @@
   } = createPopover({
     forceVisible: false,
     positioning: {
-      placement: 'bottom',
+      strategy: 'fixed',
     },
   })
 
@@ -155,7 +155,9 @@
 
 <button
   use:melt={$trigger}
-  class="bg-lime-700 hover:bg-lime-800 text-white rounded-full p-3 shadow-lg transition-colors duration-200 w-fit"
+  class="bg-lime-700 hover:bg-lime-800 text-white rounded-full p-3 shadow-lg transition-colors duration-200 w-fit {$open
+    ? 'sm:relative sm:z-[101] hidden sm:block'
+    : ''}"
   aria-label="Add container"
 >
   <Plus size={24} />
@@ -169,7 +171,10 @@
   ></div>
 {/if}
 
-<div use:melt={$content} class="bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 w-[400px] z-50">
+<div
+  use:melt={$content}
+  class="fixed inset-0 sm:static bg-white dark:bg-stone-800 sm:rounded-lg shadow-lg p-4 sm:p-6 w-full sm:w-[400px] h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto z-[100]"
+>
   <div use:melt={$arrow}></div>
   <h2 class="text-xl font-semibold mb-4">Add New Container</h2>
 
@@ -218,7 +223,7 @@
         <div class="flex gap-2 items-start">
           <div class="flex-1">
             <label for="species-{i}" class="block text-sm font-medium mb-1">Plant {i + 1}</label>
-            <div class="flex gap-2 items-start">
+            <div class="flex flex-col sm:flex-row gap-2">
               <div class="flex-1">
                 {#if plant.species === 'new'}
                   <input
@@ -242,23 +247,25 @@
                   </select>
                 {/if}
               </div>
-              <div class="w-20">
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Qty"
-                  bind:value={plant.quantity}
-                  class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
-                />
+              <div class="flex gap-2 items-center">
+                <div class="w-24 sm:w-20">
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="Qty"
+                    bind:value={plant.quantity}
+                    class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onclick={() => removePlant(i)}
+                  class="text-red-500 hover:text-red-600 text-2xl font-bold leading-none"
+                  aria-label="Remove plant"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                type="button"
-                onclick={() => removePlant(i)}
-                class="text-red-500 hover:text-red-600 text-2xl font-bold leading-none mt-1"
-                aria-label="Remove plant"
-              >
-                ×
-              </button>
             </div>
           </div>
         </div>
@@ -268,18 +275,18 @@
       </button>
     </div>
 
-    <div class="flex justify-end gap-2 pt-4">
+    <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-4">
       <button
         type="button"
         onclick={() => ($open = false)}
-        class="px-4 py-2 text-sm border rounded-md hover:bg-gray-100 dark:hover:bg-stone-700"
+        class="sm:block px-4 py-2 text-sm border rounded-md hover:bg-gray-100 dark:hover:bg-stone-700"
       >
         Cancel
       </button>
       <button
         type="submit"
         disabled={loading}
-        class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-600 disabled:opacity-50"
+        class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 disabled:opacity-50"
       >
         {loading ? 'Adding...' : 'Add Container'}
       </button>
