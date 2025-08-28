@@ -3,6 +3,7 @@
   import { createPopover, createDialog, melt } from '@melt-ui/svelte'
   import { fade, scale } from 'svelte/transition'
   import type { Container } from './types'
+  import { toast } from './toast'
 
   interface Props {
     container: Container
@@ -58,8 +59,13 @@
   <div use:melt={$arrow}></div>
   <button
     class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
-    onclick={() => {
-      onWater()
+    onclick={async () => {
+      try {
+        await onWater()
+        toast('Plants watered successfully', { type: 'success' })
+      } catch (error) {
+        toast('Failed to update watering time', { type: 'error' })
+      }
       $popoverOpen = false
     }}
   >
@@ -118,8 +124,13 @@
       </button>
       <button
         class="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
-        onclick={() => {
-          onDelete()
+        onclick={async () => {
+          try {
+            await onDelete()
+            toast('Container deleted successfully', { type: 'success' })
+          } catch (error) {
+            toast('Failed to delete container', { type: 'error' })
+          }
           $dialogOpen = false
         }}
       >
