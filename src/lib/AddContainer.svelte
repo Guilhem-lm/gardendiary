@@ -27,6 +27,7 @@
         plants = container.expand.plants.map((plant: Plant) => ({
           species: plant.species,
           speciesName: plant.expand?.species.name,
+          quantity: 1,
         }))
       }
       $open = true
@@ -36,7 +37,7 @@
   let name = $state('')
   let location = $state('')
   let size = $state('')
-  let plants = $state<{ species: string; speciesName?: string }[]>([])
+  let plants = $state<{ species: string; speciesName?: string; quantity: number }[]>([])
   let species = $state<Species[]>([])
   let loading = $state(false)
 
@@ -106,12 +107,15 @@
         }
 
         if (speciesId) {
-          const newPlant = await pb.collection('plants').create({
-            container: result.id,
-            species: speciesId,
-            user: pb.authStore.record?.id,
-          })
-          plantIds.push(newPlant.id)
+          // Create multiple plants based on quantity
+          for (let j = 0; j < (plant.quantity || 1); j++) {
+            const newPlant = await pb.collection('plants').create({
+              container: result.id,
+              species: speciesId,
+              user: pb.authStore.record?.id,
+            })
+            plantIds.push(newPlant.id)
+          }
         }
       }
 
@@ -137,7 +141,7 @@
   }
 
   function addPlant() {
-    plants = [...plants, { species: '', speciesName: undefined }]
+    plants = [...plants, { species: '', speciesName: undefined, quantity: 1 }]
   }
 
   function removePlant(index: number) {
@@ -214,32 +218,43 @@
         <div class="flex gap-2 items-start">
           <div class="flex-1">
             <label for="species-{i}" class="block text-sm font-medium mb-1">Plant {i + 1}</label>
-            <div class="flex gap-2 items-center">
-              {#if plant.species === 'new'}
+            <div class="flex gap-2 items-start">
+              <div class="flex-1">
+                {#if plant.species === 'new'}
+                  <input
+                    type="text"
+                    id="new-species-{i}"
+                    placeholder="Enter new species name"
+                    bind:value={plant.speciesName}
+                    class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+                  />
+                {:else}
+                  <select
+                    id="species-{i}"
+                    bind:value={plant.species}
+                    class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+                  >
+                    <option value="">Select a species</option>
+                    {#each species as s}
+                      <option value={s.id}>{s.name}</option>
+                    {/each}
+                    <option value="new">+ Add new species</option>
+                  </select>
+                {/if}
+              </div>
+              <div class="w-20">
                 <input
-                  type="text"
-                  id="new-species-{i}"
-                  placeholder="Enter new species name"
-                  bind:value={plant.speciesName}
-                  class="flex-1 px-3 py-2 border rounded-md dark:bg-stone-700"
+                  type="number"
+                  min="1"
+                  placeholder="Qty"
+                  bind:value={plant.quantity}
+                  class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
                 />
-              {:else}
-                <select
-                  id="species-{i}"
-                  bind:value={plant.species}
-                  class="flex-1 px-3 py-2 border rounded-md dark:bg-stone-700"
-                >
-                  <option value="">Select a species</option>
-                  {#each species as s}
-                    <option value={s.id}>{s.name}</option>
-                  {/each}
-                  <option value="new">+ Add new species</option>
-                </select>
-              {/if}
+              </div>
               <button
                 type="button"
                 onclick={() => removePlant(i)}
-                class="text-red-500 hover:text-red-600 text-2xl font-bold leading-none"
+                class="text-red-500 hover:text-red-600 text-2xl font-bold leading-none mt-1"
                 aria-label="Remove plant"
               >
                 ×
