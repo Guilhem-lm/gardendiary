@@ -36,6 +36,7 @@
       <div class="flex items-center gap-2">
         <Sprout size={24} color="#4CAF50" />
       </div>
+      <h1 class="text-sm dark:text-stone-100">My containers</h1>
       <button type="button" onclick={logout} class="text-sm">
         <LogOut size={16} />
       </button>

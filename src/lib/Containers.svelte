@@ -75,8 +75,6 @@
 </script>
 
 <div class="p-4">
-  <h1 class="text-sm dark:text-stone-100 mb-4">My Garden Containers</h1>
-
   {#if loading}
     <p>Loading containers...</p>
   {:else if error}
