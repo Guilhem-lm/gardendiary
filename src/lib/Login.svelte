@@ -30,14 +30,14 @@
 </style>
 
 {#if currentUser}
-  <div class="flex flex-col h-ful w-full justify-start">
+  <div class="flex flex-col h-full w-full justify-start">
     <!-- Top bar -->
     <div class="flex justify-between gap-2 items-center w-full h-10 px-4">
       <div class="flex items-center gap-2">
-        <Sprout size={24} color="#4CAF50" />
+        <Sprout size={24} class="text-lime-700" />
       </div>
       <h1 class="text-sm dark:text-stone-100">My containers</h1>
-      <button type="button" onclick={logout} class="text-sm">
+      <button type="button" onclick={logout} class="text-sm hover:text-lime-700">
         <LogOut size={16} />
       </button>
     </div>
@@ -46,13 +46,30 @@
 {:else}
   <div class="flex flex-col h-full w-full justify-center items-center">
     <div class="logo">
-      <Sprout size={48} color="#4CAF50" />
+      <Sprout size={48} class="text-lime-700" />
     </div>
     <div class="flex flex-col gap-4">
       <form onsubmit={(e) => e.preventDefault()} class="flex flex-col gap-4">
-        <input type="text" name="email" placeholder="Email" bind:value={email} />
-        <input type="password" name="password" placeholder="Password" bind:value={password} />
-        <button type="submit" onclick={login}>Login</button>
+        <input
+          type="text"
+          name="email"
+          placeholder="Email"
+          bind:value={email}
+          class="px-3 py-2 border rounded-md dark:bg-stone-700 focus:border-lime-700 focus:ring-1 focus:ring-lime-700"
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          bind:value={password}
+          class="px-3 py-2 border rounded-md dark:bg-stone-700 focus:border-lime-700 focus:ring-1 focus:ring-lime-700"
+        />
+        <button
+          type="submit"
+          onclick={login}
+          class="bg-lime-700 hover:bg-lime-800 text-white rounded-md py-2 px-4 transition-colors duration-200"
+          >Login</button
+        >
       </form>
     </div>
   </div>

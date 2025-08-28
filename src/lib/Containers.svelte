@@ -2,6 +2,7 @@
   import { pb } from './pocketbase.svelte'
   import { onMount } from 'svelte'
   import type { RecordModel } from 'pocketbase'
+  import AddContainer from './AddContainer.svelte'
 
   interface Species {
     id: string
@@ -74,7 +75,7 @@
   $inspect('dbg containers', containers)
 </script>
 
-<div class="p-4">
+<div class="p-4 flex flex-col justify-between h-full">
   {#if loading}
     <p>Loading containers...</p>
   {:else if error}
@@ -108,4 +109,7 @@
       {/each}
     </div>
   {/if}
+  <div class="mx-auto">
+    <AddContainer onContainerAdded={fetchContainers} />
+  </div>
 </div>
