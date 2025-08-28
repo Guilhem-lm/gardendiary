@@ -89,6 +89,12 @@
                     fetchContainers()
                   }
                 }}
+                onWater={async () => {
+                  await pb.collection('containers').update(container.id, {
+                    last_watered: new Date().toISOString(),
+                  })
+                  fetchContainers()
+                }}
               />
             </div>
             <div class="flex flex-row gap-4 text-sm text-stone-500 dark:text-stone-400">

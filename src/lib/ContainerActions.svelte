@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { MoreVertical, Edit2, Trash2 } from 'lucide-svelte'
+  import { MoreVertical, Edit2, Trash2, Droplets } from 'lucide-svelte'
   import { createPopover, melt } from '@melt-ui/svelte'
   import { fade } from 'svelte/transition'
   import type { Container } from './types'
@@ -8,9 +8,10 @@
     container: Container
     onEdit: () => void
     onDelete: () => void
+    onWater: () => void
   }
 
-  const { container, onEdit, onDelete } = $props()
+  const { container, onEdit, onDelete, onWater } = $props()
 
   const {
     elements: { trigger, content, arrow, overlay },
@@ -41,6 +42,16 @@
 
 <div use:melt={$content} class="bg-white dark:bg-stone-800 rounded-lg shadow-lg py-1 w-36 z-50">
   <div use:melt={$arrow}></div>
+  <button
+    class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
+    onclick={() => {
+      onWater()
+      $open = false
+    }}
+  >
+    <Droplets size={16} />
+    Water Plants
+  </button>
   <button
     class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
     onclick={() => {
