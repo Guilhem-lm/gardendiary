@@ -68,6 +68,7 @@
       })
 
       // Handle plants and species
+      const plantIds = []
       for (const plant of plants) {
         let speciesId = plant.species
 
@@ -80,13 +81,19 @@
         }
 
         if (speciesId) {
-          await pb.collection('plants').create({
+          const newPlant = await pb.collection('plants').create({
             container: container.id,
             species: speciesId,
             user: pb.authStore.record?.id,
           })
+          plantIds.push(newPlant.id)
         }
       }
+
+      // Update container with plant IDs
+      await pb.collection('containers').update(container.id, {
+        plants: plantIds,
+      })
 
       // Reset form
       name = ''
