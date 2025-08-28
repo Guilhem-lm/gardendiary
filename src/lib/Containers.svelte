@@ -51,8 +51,6 @@
   onMount(() => {
     fetchContainers()
   })
-
-  $inspect('dbg containers', containers)
 </script>
 
 <div class="h-full flex flex-col">

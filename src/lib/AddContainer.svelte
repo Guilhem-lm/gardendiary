@@ -5,6 +5,12 @@
   import { onMount } from 'svelte'
   import type { Container, Plant } from './types'
   import { fade, scale } from 'svelte/transition'
+  import { toast } from './toast'
+
+  // Auto-focus action for inputs
+  function autoFocus(node: HTMLElement) {
+    node.focus()
+  }
 
   interface Species {
     id: string
@@ -60,14 +66,21 @@
 
   async function addNewSpecies(speciesName: string) {
     try {
+      // Check if species already exists
+      const existing = species.find((s) => s.name.toLowerCase() === speciesName.toLowerCase())
+      if (existing) {
+        return existing
+      }
+
       const record = await pb.collection('species').create<Species>({
-        name: speciesName,
+        name: speciesName.trim(),
+        created_by: pb.authStore.record?.id,
       })
       species = [...species, record]
       return record
     } catch (error) {
       console.error('Error creating species:', error)
-      return null
+      throw new Error('Failed to create new species')
     }
   }
 
@@ -91,29 +104,40 @@
       // Handle plants and species
       const plantIds = []
       for (const plant of plants) {
-        // Skip empty selections
-        if (!plant.species) continue
+        try {
+          // Skip empty selections
+          if (!plant.species && plant.species !== 'new') continue
 
-        let speciesId = plant.species === 'new' ? null : plant.species
+          let speciesId = plant.species
 
-        // If it's a new species, create it first
-        if (plant.species === 'new' && plant.speciesName) {
-          const newSpecies = await addNewSpecies(plant.speciesName)
-          if (newSpecies) {
+          // If it's a new species, create it first
+          if (plant.species === 'new') {
+            if (!plant.speciesName?.trim()) {
+              toast('Please enter a name for the new species', { type: 'error' })
+              return
+            }
+            const newSpecies = await addNewSpecies(plant.speciesName)
             speciesId = newSpecies.id
           }
-        }
 
-        if (speciesId) {
-          // Create multiple plants based on quantity
-          for (let j = 0; j < (plant.quantity || 1); j++) {
-            const newPlant = await pb.collection('plants').create({
-              container: result.id,
-              species: speciesId,
-              user: pb.authStore.record?.id,
-            })
-            plantIds.push(newPlant.id)
+          if (speciesId) {
+            // Create multiple plants based on quantity
+            const quantity = plant.quantity || 1
+            for (let j = 0; j < quantity; j++) {
+              const newPlant = await pb.collection('plants').create({
+                container: result.id,
+                species: speciesId,
+                user: pb.authStore.record?.id,
+              })
+              plantIds.push(newPlant.id)
+            }
           }
+        } catch (error) {
+          console.error('Error processing plant:', error)
+          toast('Failed to add plant: ' + ((error as Error)?.message || 'Unknown error'), {
+            type: 'error',
+          })
+          return
         }
       }
 
@@ -229,11 +253,17 @@
                         placeholder="Enter new species name"
                         bind:value={plant.speciesName}
                         class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+                        use:autoFocus
                       />
                     {:else}
                       <select
                         id="species-{i}"
                         bind:value={plant.species}
+                        onchange={(e) => {
+                          if ((e.target as HTMLSelectElement).value === 'new') {
+                            plant.speciesName = ''
+                          }
+                        }}
                         class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
                       >
                         <option value="">Select a species</option>
