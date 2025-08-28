@@ -29,8 +29,10 @@
 </style>
 
 {#if currentUser}
-  <p>Logged in as {currentUser.name}</p>
-  <button type="button" onclick={logout}>Logout</button>
+  <div class="flex flex-col gap-2">
+    <p>Logged in as {currentUser.name}</p>
+    <button type="button" onclick={logout}>Logout</button>
+  </div>
 {:else}
   <div class="logo">
     <Sprout size={48} color="#4CAF50" />

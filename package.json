@@ -20,7 +20,9 @@
     "vite": "^7.1.2"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.12",
     "lucide-svelte": "^0.542.0",
-    "pocketbase": "^0.26.2"
+    "pocketbase": "^0.26.2",
+    "tailwindcss": "^4.1.12"
   }
 }
