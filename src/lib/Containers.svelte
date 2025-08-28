@@ -3,31 +3,11 @@
   import { onMount } from 'svelte'
   import type { RecordModel } from 'pocketbase'
   import AddContainer from './AddContainer.svelte'
+  import ContainerActions from './ContainerActions.svelte'
 
-  interface Species {
-    id: string
-    name: string
-  }
+  let editingContainer: Container | null = $state(null)
 
-  interface Plant {
-    id: string
-    species: string
-    expand?: {
-      species: Species
-    }
-  }
-
-  interface Container extends RecordModel {
-    name: string
-    location: string
-    size: string
-    plants?: string[]
-    last_watered?: string
-    expand?: {
-      plants: Plant[]
-      user: any
-    }
-  }
+  import type { Container } from './types'
 
   function getSpeciesCount(container: Container): string {
     if (!container.expand?.plants || container.expand.plants.length === 0) {
@@ -91,13 +71,25 @@
           <div
             class="bg-white dark:bg-stone-700 rounded-lg shadow-md p-6 transform transition-all duration-200 flex flex-col gap-2"
           >
-            <div class="flex flex-row gap-4 items-baseline">
-              <h2 class="text-xl font-semibold">
-                {container.name}
-              </h2>
-              <p class="text-stone-600 dark:text-stone-300">
-                {getSpeciesCount(container)}
-              </p>
+            <div class="flex flex-row gap-4 items-baseline justify-between">
+              <div class="flex flex-row gap-4 items-baseline">
+                <h2 class="text-xl font-semibold">
+                  {container.name}
+                </h2>
+                <p class="text-stone-600 dark:text-stone-300">
+                  {getSpeciesCount(container)}
+                </p>
+              </div>
+              <ContainerActions
+                {container}
+                onEdit={() => (editingContainer = container)}
+                onDelete={async () => {
+                  if (confirm('Are you sure you want to delete this container?')) {
+                    await pb.collection('containers').delete(container.id)
+                    fetchContainers()
+                  }
+                }}
+              />
             </div>
             <div class="flex flex-row gap-4 text-sm text-stone-500 dark:text-stone-400">
               <p><span class="font-medium">Location:</span> {container.location}</p>
@@ -118,7 +110,13 @@
     class="fixed bottom-0 left-0 right-0 p-4 bg-stone-100/80 dark:bg-stone-800/80 backdrop-blur-sm"
   >
     <div class="max-w-4xl mx-auto flex justify-center">
-      <AddContainer onContainerAdded={fetchContainers} />
+      <AddContainer
+        onContainerAdded={() => {
+          fetchContainers()
+          editingContainer = null
+        }}
+        container={editingContainer}
+      />
     </div>
   </div>
 </div>

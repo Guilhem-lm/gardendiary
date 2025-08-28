@@ -3,6 +3,7 @@
   import { createPopover, melt } from '@melt-ui/svelte'
   import { pb } from './pocketbase.svelte'
   import { onMount } from 'svelte'
+  import type { Container, Plant } from './types'
   import { fade } from 'svelte/transition'
 
   interface Species {
@@ -12,9 +13,25 @@
 
   interface Props {
     onContainerAdded: () => void
+    container?: Container | null
   }
 
-  const { onContainerAdded }: Props = $props()
+  const { onContainerAdded, container = null }: Props = $props()
+
+  $effect(() => {
+    if (container) {
+      name = container.name
+      location = container.location
+      size = container.size
+      if (container.expand?.plants) {
+        plants = container.expand.plants.map((plant: Plant) => ({
+          species: plant.species,
+          speciesName: plant.expand?.species.name,
+        }))
+      }
+      $open = true
+    }
+  })
 
   let name = $state('')
   let location = $state('')
@@ -59,21 +76,29 @@
     try {
       loading = true
 
-      // Create container
-      const container = await pb.collection('containers').create({
+      // Create or update container
+      const containerData = {
         name,
         location,
         size,
         user: pb.authStore.record?.id,
-      })
+      }
+
+      // Create or update the container
+      const result = container?.id
+        ? await pb.collection('containers').update(container.id, containerData)
+        : await pb.collection('containers').create(containerData)
 
       // Handle plants and species
       const plantIds = []
       for (const plant of plants) {
-        let speciesId = plant.species
+        // Skip empty selections
+        if (!plant.species) continue
+
+        let speciesId = plant.species === 'new' ? null : plant.species
 
         // If it's a new species, create it first
-        if (!speciesId && plant.speciesName) {
+        if (plant.species === 'new' && plant.speciesName) {
           const newSpecies = await addNewSpecies(plant.speciesName)
           if (newSpecies) {
             speciesId = newSpecies.id
@@ -82,7 +107,7 @@
 
         if (speciesId) {
           const newPlant = await pb.collection('plants').create({
-            container: container.id,
+            container: result.id,
             species: speciesId,
             user: pb.authStore.record?.id,
           })
@@ -91,7 +116,7 @@
       }
 
       // Update container with plant IDs
-      await pb.collection('containers').update(container.id, {
+      await pb.collection('containers').update(result.id, {
         plants: plantIds,
       })
 
@@ -112,7 +137,7 @@
   }
 
   function addPlant() {
-    plants = [...plants, { species: '' }]
+    plants = [...plants, { species: '', speciesName: undefined }]
   }
 
   function removePlant(index: number) {
@@ -188,37 +213,39 @@
       {#each plants as plant, i}
         <div class="flex gap-2 items-start">
           <div class="flex-1">
-            <label for="species-{i}" class="block text-sm font-medium">Plant {i + 1}</label>
-            <select
-              id="species-{i}"
-              bind:value={plant.species}
-              class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
-            >
-              <option value="">Select or add new species</option>
-              {#each species as s}
-                <option value={s.id}>{s.name}</option>
-              {/each}
-            </select>
-            {#if plant.species === ''}
-              <label for="new-species-{i}" class="block text-sm font-medium mt-2"
-                >New Species Name</label
+            <label for="species-{i}" class="block text-sm font-medium mb-1">Plant {i + 1}</label>
+            <div class="flex gap-2 items-center">
+              {#if plant.species === 'new'}
+                <input
+                  type="text"
+                  id="new-species-{i}"
+                  placeholder="Enter new species name"
+                  bind:value={plant.speciesName}
+                  class="flex-1 px-3 py-2 border rounded-md dark:bg-stone-700"
+                />
+              {:else}
+                <select
+                  id="species-{i}"
+                  bind:value={plant.species}
+                  class="flex-1 px-3 py-2 border rounded-md dark:bg-stone-700"
+                >
+                  <option value="">Select a species</option>
+                  {#each species as s}
+                    <option value={s.id}>{s.name}</option>
+                  {/each}
+                  <option value="new">+ Add new species</option>
+                </select>
+              {/if}
+              <button
+                type="button"
+                onclick={() => removePlant(i)}
+                class="text-red-500 hover:text-red-600 text-2xl font-bold leading-none"
+                aria-label="Remove plant"
               >
-              <input
-                type="text"
-                id="new-species-{i}"
-                placeholder="Enter new species name"
-                bind:value={plant.speciesName}
-                class="mt-1 w-full px-3 py-2 border rounded-md dark:bg-stone-700"
-              />
-            {/if}
+                ×
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onclick={() => removePlant(i)}
-            class="px-2 py-1 text-red-500 hover:text-red-600"
-          >
-            Remove
-          </button>
         </div>
       {/each}
       <button type="button" onclick={addPlant} class="text-lime-700 hover:text-lime-600 text-sm">
