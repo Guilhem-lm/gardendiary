@@ -30,9 +30,9 @@
 </style>
 
 {#if currentUser}
-  <div class="flex flex-col h-full w-full justify-start">
+  <div class="flex flex-col min-h-screen">
     <!-- Top bar -->
-    <div class="flex justify-between gap-2 items-center w-full h-10 px-4">
+    <div class="flex justify-between gap-2 items-center w-full h-14 px-4">
       <div class="flex items-center gap-2">
         <Sprout size={24} class="text-lime-700" />
       </div>
@@ -41,10 +41,12 @@
         <LogOut size={16} />
       </button>
     </div>
-    <Container />
+    <div class="flex-1 overflow-auto">
+      <Container />
+    </div>
   </div>
 {:else}
-  <div class="flex flex-col h-full w-full justify-center items-center">
+  <div class="flex flex-col min-h-screen justify-center items-center">
     <div class="logo">
       <Sprout size={48} class="text-lime-700" />
     </div>
