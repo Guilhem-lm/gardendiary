@@ -3,6 +3,7 @@
   import { createPopover, melt } from '@melt-ui/svelte'
   import { pb } from './pocketbase.svelte'
   import { onMount } from 'svelte'
+  import { fade } from 'svelte/transition'
 
   interface Species {
     id: string
@@ -23,10 +24,13 @@
   let loading = $state(false)
 
   const {
-    elements: { trigger, content, arrow },
+    elements: { trigger, content, arrow, overlay },
     states: { open },
   } = createPopover({
     forceVisible: false,
+    positioning: {
+      placement: 'bottom',
+    },
   })
 
   async function fetchSpecies() {
@@ -60,7 +64,7 @@
         name,
         location,
         size,
-        user: pb.authStore.model?.id,
+        user: pb.authStore.record?.id,
       })
 
       // Handle plants and species
@@ -79,7 +83,7 @@
           await pb.collection('plants').create({
             container: container.id,
             species: speciesId,
-            user: pb.authStore.model?.id,
+            user: pb.authStore.record?.id,
           })
         }
       }
@@ -115,11 +119,19 @@
 
 <button
   use:melt={$trigger}
-  class="bg-lime-700 hover:bg-lime-600 text-white rounded-full p-3 shadow-lg transition-colors duration-200 w-fit"
+  class="bg-lime-700 hover:bg-lime-800 text-white rounded-full p-3 shadow-lg transition-colors duration-200 w-fit"
   aria-label="Add container"
 >
   <Plus size={24} />
 </button>
+
+{#if $open}
+  <div
+    use:melt={$overlay}
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm"
+    transition:fade={{ duration: 150 }}
+  ></div>
+{/if}
 
 <div use:melt={$content} class="bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 w-[400px] z-50">
   <div use:melt={$arrow}></div>
