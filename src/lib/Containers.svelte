@@ -84,10 +84,8 @@
                 {container}
                 onEdit={() => (editingContainer = container)}
                 onDelete={async () => {
-                  if (confirm('Are you sure you want to delete this container?')) {
-                    await pb.collection('containers').delete(container.id)
-                    fetchContainers()
-                  }
+                  await pb.collection('containers').delete(container.id)
+                  fetchContainers()
                 }}
                 onWater={async () => {
                   await pb.collection('containers').update(container.id, {
