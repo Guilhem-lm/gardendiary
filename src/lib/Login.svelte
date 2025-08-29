@@ -46,7 +46,7 @@
 </style>
 
 {#if currentUser}
-  <div class="flex min-h-screen h-screen bg-stone-50 dark:bg-stone-900">
+  <div class="flex min-h-screen h-screen bg-stone-50 dark:bg-stone-800">
     <Navigation bind:currentView />
 
     <!-- Main content -->

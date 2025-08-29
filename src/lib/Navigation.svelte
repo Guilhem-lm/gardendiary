@@ -17,8 +17,8 @@
   <div class="flex justify-around items-center h-16">
     <button
       class="flex flex-col items-center justify-center flex-1 h-full {currentView === 'containers'
-        ? 'text-lime-700'
-        : 'text-stone-600 dark:text-stone-400'}"
+        ? 'text-lime-600 dark:text-lime-500'
+        : 'text-stone-400 dark:text-stone-500'}"
       onclick={() => (currentView = 'containers')}
     >
       <Sprout size={20} />
@@ -26,8 +26,8 @@
     </button>
     <button
       class="flex flex-col items-center justify-center flex-1 h-full {currentView === 'species'
-        ? 'text-lime-700'
-        : 'text-stone-600 dark:text-stone-400'}"
+        ? 'text-lime-600 dark:text-lime-500'
+        : 'text-stone-400 dark:text-stone-500'}"
       onclick={() => (currentView = 'species')}
     >
       <Leaf size={20} />
@@ -48,8 +48,8 @@
   <div class="flex-1 flex flex-col gap-2 p-2">
     <button
       class="flex items-center gap-2 px-3 py-2 rounded-lg {currentView === 'containers'
-        ? 'bg-lime-100 dark:bg-lime-900 text-lime-700'
-        : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700'}"
+        ? 'bg-lime-100 dark:bg-lime-900 dark:text-lime-200 text-lime-700'
+        : 'text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700'}"
       onclick={() => (currentView = 'containers')}
     >
       <Sprout size={20} />
@@ -57,8 +57,8 @@
     </button>
     <button
       class="flex items-center gap-2 px-3 py-2 rounded-lg {currentView === 'species'
-        ? 'bg-lime-100 dark:bg-lime-900 text-lime-700'
-        : 'text-stone-600 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700'}"
+        ? 'bg-lime-100 dark:bg-lime-900 dark:text-lime-200 text-lime-700'
+        : 'text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700'}"
       onclick={() => (currentView = 'species')}
     >
       <Leaf size={20} />

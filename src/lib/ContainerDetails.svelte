@@ -16,8 +16,8 @@
   import type { Container, Species } from './types'
   import { pb } from './pocketbase.svelte'
   import { toast } from './toast'
-  import { getContainerPlants, formatPlantsCount } from './utils/container'
-  import { createDialog, melt } from '@melt-ui/svelte'
+  import { getContainerPlants, formatPlantsCount, getTotalPlantsCount } from './utils/container'
+  import { createDialog, createDropdownMenu, melt } from '@melt-ui/svelte'
 
   interface Props {
     container: Container
@@ -89,6 +89,50 @@
     } catch (error) {
       console.error('Error deleting photo:', error)
       toast('Failed to delete photo', { type: 'error' })
+    }
+  }
+
+  // Container actions dropdown
+  const {
+    elements: {
+      trigger: containerActionsTrigger,
+      menu: containerActionsMenu,
+      overlay: containerActionsOverlay,
+      item: containerActionsItem,
+    },
+    states: { open: containerActionsOpen },
+  } = createDropdownMenu({
+    positioning: {
+      placement: 'bottom-end',
+    },
+    preventScroll: true,
+    loop: true,
+  })
+
+  // Delete container dialog
+  const {
+    elements: {
+      trigger: deleteContainerTrigger,
+      content: deleteContainerContent,
+      overlay: deleteContainerOverlay,
+      title: deleteContainerTitle,
+      description: deleteContainerDescription,
+      close: deleteContainerClose,
+    },
+    states: { open: deleteContainerOpen },
+  } = createDialog({
+    role: 'dialog',
+    preventScroll: true,
+  })
+
+  async function deleteContainer() {
+    try {
+      await pb.collection('containers').delete(container.id)
+      toast('Container deleted successfully', { type: 'success' })
+      onClose()
+    } catch (error) {
+      console.error('Error deleting container:', error)
+      toast('Failed to delete container', { type: 'error' })
     }
   }
 
@@ -344,8 +388,8 @@
 </script>
 
 <div
-  class="fixed inset-0 bg-stone-50 dark:bg-stone-900 z-[200] overflow-auto"
-  transition:fly={{ y: '100%', duration: 300 }}
+  class="fixed inset-0 bg-stone-100 dark:bg-stone-800 z-[200] overflow-auto"
+  transition:fly={{ x: '-100%', duration: 150 }}
 >
   <!-- Header -->
   <div
@@ -376,22 +420,60 @@
         class="hidden"
         onchange={handlePhotoUpload}
       />
+
       <button
-        use:melt={$editContainerTrigger}
+        use:melt={$containerActionsTrigger}
         class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 px-2"
-        aria-label="Edit container"
+        aria-label="Container actions"
       >
         <EllipsisVertical size={20} />
       </button>
+
+      {#if $containerActionsOpen}
+        <div
+          use:melt={$containerActionsOverlay}
+          class="fixed inset-0 z-[300]"
+          transition:fade={{ duration: 100 }}
+        ></div>
+
+        <div
+          use:melt={$containerActionsMenu}
+          class="absolute right-0 mt-1 w-36 bg-white dark:bg-stone-800 rounded-lg shadow-lg py-1 z-[301]"
+          transition:scale={{ duration: 150, start: 0.95 }}
+        >
+          <button
+            use:melt={$containerActionsItem}
+            use:melt={$editContainerTrigger}
+            class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
+            onclick={() => {
+              $containerActionsOpen = false
+            }}
+          >
+            <Settings size={16} />
+            Edit
+          </button>
+          <button
+            use:melt={$containerActionsItem}
+            use:melt={$deleteContainerTrigger}
+            class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700"
+            onclick={() => {
+              $containerActionsOpen = false
+            }}
+          >
+            <Trash2 size={16} />
+            Delete
+          </button>
+        </div>
+      {/if}
     </div>
   </div>
 
   <!-- Content -->
-  <div class="max-w-4xl mx-auto p-4">
-    <div class="bg-white dark:bg-stone-800 rounded-lg shadow-sm p-6 flex flex-col gap-4">
-      <div class="flex flex-col md:flex-row gap-4 md:items-start">
+  <div class="max-w-4xl mx-auto">
+    <div class="p-4 flex flex-col gap-4">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
         <!-- Container Photo Section -->
-        <div class="w-full max-w-80 aspect-square shrink-0 relative group mx-auto">
+        <div class="w-full max-w-80 aspect-square shrink-0 relative group mx-auto md:mx-0">
           {#if container.photos && container.photos.length > 0}
             <div class="w-full h-full" ontouchstart={handleTouchStart} ontouchend={handleTouchEnd}>
               <div
@@ -444,17 +526,6 @@
               {/if}
             </div>
             <!-- Photo info bar -->
-            <div class="mt-2 flex justify-between items-center text-sm">
-              <p class="text-stone-500 dark:text-stone-400">
-                Added {new Date(container.updated).toLocaleDateString()}
-              </p>
-              <button
-                use:melt={$deletePhotoTrigger}
-                class="text-stone-600 dark:text-stone-300 hover:text-red-700 dark:hover:text-red-400 flex items-center gap-1"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
           {:else}
             <div
               class="w-full h-full bg-stone-100 dark:bg-stone-700 rounded-lg flex items-center justify-center"
@@ -464,19 +535,20 @@
           {/if}
         </div>
 
-        <div class="flex flex-col gap-3 mt-4 text-sm text-stone-500 dark:text-stone-400">
-          <p class="text-stone-600 dark:text-stone-300">{formatPlantsCount(container)}</p>
-
+        <!-- Container Details -->
+        <div
+          class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-700 rounded-lg p-4 md:grow min-w-0 md:h-80 shadow-sm"
+        >
           <div class="flex flex-col gap-2">
             <!-- Location -->
             <div class="flex items-center gap-2">
-              <span class="font-medium">Location</span>
+              <span class="font-medium">Location:</span>
               <p class="flex-1">{container.location}</p>
             </div>
 
             <!-- Size -->
             <div class="flex items-center gap-2">
-              <span class="font-medium">Size</span>
+              <span class="font-medium">Size:</span>
               <p class="flex-1">{container.size}</p>
             </div>
 
@@ -497,9 +569,9 @@
         </div>
       </div>
       <!-- Plants List -->
-      <div class="w-full">
+      <div class="w-full mt-2">
         <div class="flex items-center gap-2 mb-3">
-          <h2 class="text-lg font-semibold">Plants</h2>
+          <h2 class="text-lg font-semibold">Plants ({getTotalPlantsCount(container)})</h2>
           <button
             use:melt={$addPlantTrigger}
             class="text-stone-400 hover:text-lime-700 dark:text-stone-500 dark:hover:text-lime-700"
@@ -578,7 +650,7 @@
         {:else}
           <div class="grid gap-3">
             {#each container.expand.plants as plant}
-              <div class="bg-stone-50 dark:bg-stone-700 rounded-lg p-4">
+              <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm">
                 <div class="flex items-baseline justify-between">
                   <div class="flex items-baseline gap-2">
                     <p class="font-medium">{plant.expand?.species.name}</p>
@@ -618,17 +690,31 @@
 
   <div
     use:melt={$fullscreenPhotoContent}
-    class="fixed inset-0 z-[401] flex items-center justify-center p-4"
+    class="fixed inset-0 z-[401] flex items-center justify-center"
     transition:fade={{ duration: 150 }}
   >
     <div class="relative w-full h-full flex items-center justify-center">
       <!-- Close button -->
       <button
         use:melt={$fullscreenPhotoClose}
-        class="absolute top-4 right-4 text-white/75 hover:text-white"
+        class="absolute top-4 right-2 text-white/75 hover:text-white dark:bg-stone-700/50 rounded-lg p-2"
       >
         <X size={24} />
       </button>
+
+      <div
+        class="absolute bottom-2 right-2 flex items-center gap-4 text-stone-600 dark:text-stone-200 dark:bg-stone-700/50 bg-stone-50/50 rounded-lg p-2"
+      >
+        <p class="text-lg">
+          {new Date(container.updated).toLocaleDateString()}
+        </p>
+        <button
+          use:melt={$deletePhotoTrigger}
+          class="0 hover:text-red-700 dark:hover:text-red-400 flex items-center gap-1"
+        >
+          <Trash2 size={24} />
+        </button>
+      </div>
 
       <!-- Navigation buttons -->
       {#if container.photos && container.photos.length > 1}
@@ -679,6 +765,48 @@
           {/each}
         </div>
       {/if}
+    </div>
+  </div>
+{/if}
+
+{#if $deleteContainerOpen}
+  <div
+    use:melt={$deleteContainerOverlay}
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[300]"
+    transition:fade={{ duration: 150 }}
+  ></div>
+
+  <div
+    use:melt={$deleteContainerContent}
+    class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[301]"
+    transition:scale={{ duration: 150, start: 0.95 }}
+  >
+    <div class="flex items-center gap-3 text-red-600">
+      <Trash2 size={24} />
+      <h2 use:melt={$deleteContainerTitle} class="text-lg font-semibold">Delete Container</h2>
+    </div>
+
+    <p use:melt={$deleteContainerDescription} class="mt-4 text-stone-600 dark:text-stone-300">
+      Are you sure you want to delete "{container.name}"? This will also delete all plants in this
+      container. This action cannot be undone.
+    </p>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button
+        use:melt={$deleteContainerClose}
+        class="px-4 py-2 text-sm border rounded-md hover:bg-stone-100 dark:hover:bg-stone-700"
+      >
+        Cancel
+      </button>
+      <button
+        class="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
+        onclick={() => {
+          deleteContainer()
+          $deleteContainerOpen = false
+        }}
+      >
+        Delete Container
+      </button>
     </div>
   </div>
 {/if}
@@ -764,13 +892,13 @@
 {#if $deletePhotoOpen}
   <div
     use:melt={$deletePhotoOverlay}
-    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[300]"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[500]"
     transition:fade={{ duration: 150 }}
   ></div>
 
   <div
     use:melt={$deletePhotoContent}
-    class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[301]"
+    class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[501]"
     transition:scale={{ duration: 150, start: 0.95 }}
   >
     <div class="flex items-center gap-3 text-red-600">
