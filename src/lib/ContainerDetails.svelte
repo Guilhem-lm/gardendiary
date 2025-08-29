@@ -5,7 +5,7 @@
   import type { Container } from './types'
   import { pb } from './pocketbase.svelte'
   import { toast } from './toast'
-  import { getContainerSpecies } from './utils/container'
+  import { getContainerPlants, formatPlantsCount } from './utils/container'
 
   interface Props {
     container: Container
@@ -35,25 +35,6 @@
       toast('Failed to update watering time', { type: 'error' })
     }
   }
-
-  function getSpeciesCount(container: Container): string {
-    if (!container.expand?.plants || container.expand.plants.length === 0) {
-      return '0 plants'
-    }
-
-    const speciesCount = container.expand.plants.reduce(
-      (acc, plant) => {
-        const speciesName = plant.expand?.species.name || 'Unknown'
-        acc[speciesName] = (acc[speciesName] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>
-    )
-
-    return Object.entries(speciesCount)
-      .map(([species, count]) => `${count} ${species}`)
-      .join(', ')
-  }
 </script>
 
 <div
@@ -82,7 +63,7 @@
       </div>
 
       <div class="flex flex-col gap-3 mt-4 text-sm text-stone-500 dark:text-stone-400">
-        <p class="text-stone-600 dark:text-stone-300">{getSpeciesCount(container)}</p>
+        <p class="text-stone-600 dark:text-stone-300">{formatPlantsCount(container)}</p>
 
         <div class="flex flex-col gap-2">
           <p><span class="font-medium">Location:</span> {container.location}</p>
@@ -111,7 +92,12 @@
             <div class="grid gap-3">
               {#each container.expand.plants as plant}
                 <div class="bg-stone-50 dark:bg-stone-700 rounded-lg p-4">
-                  <p class="font-medium">{plant.expand?.species.name}</p>
+                  <div class="flex items-baseline gap-2">
+                    <p class="font-medium">{plant.expand?.species.name}</p>
+                    {#if plant.quantity > 1}
+                      <p class="text-sm text-stone-500 dark:text-stone-400">× {plant.quantity}</p>
+                    {/if}
+                  </div>
                 </div>
               {/each}
             </div>

@@ -48,7 +48,7 @@
         plants = container.expand.plants.map((plant: Plant) => ({
           species: plant.species,
           speciesName: plant.expand?.species.name,
-          quantity: 1,
+          quantity: plant.quantity || 1,
         }))
       }
       $open = true
@@ -121,16 +121,14 @@
           }
 
           if (speciesId) {
-            // Create multiple plants based on quantity
-            const quantity = plant.quantity || 1
-            for (let j = 0; j < quantity; j++) {
-              const newPlant = await pb.collection('plants').create({
-                container: result.id,
-                species: speciesId,
-                user: pb.authStore.record?.id,
-              })
-              plantIds.push(newPlant.id)
-            }
+            // Create a single plant with quantity
+            const newPlant = await pb.collection('plants').create({
+              container: result.id,
+              species: speciesId,
+              quantity: plant.quantity || 1,
+              user: pb.authStore.record?.id,
+            })
+            plantIds.push(newPlant.id)
           }
         } catch (error) {
           console.error('Error processing plant:', error)

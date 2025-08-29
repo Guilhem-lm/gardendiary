@@ -1,34 +1,28 @@
 import type { Container } from '../types'
 
-export interface SpeciesCount {
+export interface PlantWithQuantity {
+  id: string
   species: string
-  count: number
+  quantity: number
 }
 
-export function getContainerSpecies(container: Container): SpeciesCount[] {
-  if (!container.expand?.plants || container.expand.plants.length === 0) {
+export function getContainerPlants(container: Container): PlantWithQuantity[] {
+  if (!container.expand?.plants) {
     return []
   }
 
-  const speciesCount = container.expand.plants.reduce(
-    (acc, plant) => {
-      const speciesName = plant.expand?.species.name || 'Unknown'
-      acc[speciesName] = (acc[speciesName] || 0) + 1
-      return acc
-    },
-    {} as Record<string, number>
-  )
-
-  return Object.entries(speciesCount).map(([species, count]) => ({
-    species,
-    count,
+  return container.expand.plants.map((plant) => ({
+    id: plant.id,
+    species: plant.expand?.species.name || 'Unknown',
+    quantity: plant.quantity || 1,
   }))
 }
 
-export function formatSpeciesCount(container: Container): string {
-  const species = getContainerSpecies(container)
-  if (species.length === 0) {
-    return '0 plants'
-  }
-  return species.map(({ species, count }) => `${count} ${species}`).join(', ')
+export function getTotalPlantsCount(container: Container): number {
+  return getContainerPlants(container).reduce((total, plant) => total + plant.quantity, 0)
+}
+
+export function formatPlantsCount(container: Container): string {
+  const totalPlants = getTotalPlantsCount(container)
+  return totalPlants === 0 ? 'No plants' : `${totalPlants} plants`
 }

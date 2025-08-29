@@ -8,6 +8,7 @@ export interface Species {
 export interface Plant {
   id: string
   species: string
+  quantity: number
   expand?: {
     species: Species
   }

@@ -7,7 +7,7 @@
   import ContainerDetails from './ContainerDetails.svelte'
   import { Droplets } from 'lucide-svelte'
   import { toast } from './toast'
-  import { getContainerSpecies } from './utils/container'
+  import { getContainerPlants, formatPlantsCount } from './utils/container'
   import type { Container } from './types'
 
   let editingContainer = $state<Container | null>(null)
@@ -61,19 +61,22 @@
             <div class="flex justify-between items-start">
               <div class="flex-1">
                 <div class="flex items-baseline justify-between">
-                  <div class="flex flex-row gap-2">
+                  <div class="flex flex-row gap-2 items-baseline">
                     <h2 class="text-lg font-semibold">{container.name}</h2>
-                    {#if getContainerSpecies(container).length > 0}
+                    <p class="text-sm text-stone-600 dark:text-stone-300 mr-4">
+                      {formatPlantsCount(container)}
+                    </p>
+                    {#if getContainerPlants(container).length > 0}
                       <div class="mt-1 flex flex-wrap gap-1.5">
-                        {#each getContainerSpecies(container) as { species, count }}
+                        {#each getContainerPlants(container) as plant}
                           <div class="bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded text-sm">
-                            {count}
-                            {species}
+                            {#if plant.quantity > 1}
+                              {plant.quantity}
+                            {/if}
+                            {plant.species}
                           </div>
                         {/each}
                       </div>
-                    {:else}
-                      <p class="mt-1 text-sm text-stone-500 dark:text-stone-400">No plants</p>
                     {/if}
                   </div>
                   <div role="presentation" onclick={(e) => e.stopPropagation()}>
