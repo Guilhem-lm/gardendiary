@@ -109,7 +109,11 @@
     {/if}
   </div>
   <!-- Add button - floating on mobile, fixed on desktop -->
-  <div class="fixed md:absolute right-4 {editingContainer ? 'hidden' : ''} md:bottom-20 bottom-24">
+  <div
+    class="fixed md:absolute right-4 {editingContainer
+      ? 'hidden'
+      : ''} md:bottom-10 md:right-8 bottom-18"
+  >
     <AddContainer
       onContainerAdded={() => {
         fetchContainers()
