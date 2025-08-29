@@ -4,8 +4,10 @@
   import type { RecordModel } from 'pocketbase'
   import AddContainer from './AddContainer.svelte'
   import ContainerActions from './ContainerActions.svelte'
+  import ContainerDetails from './ContainerDetails.svelte'
 
-  let editingContainer: Container | null = $state(null)
+  let editingContainer = $state<Container | null>(null)
+  let selectedContainer = $state<Container | null>(null)
 
   import type { Container } from './types'
 
@@ -66,8 +68,10 @@
     {:else}
       <div class="flex flex-col gap-4 max-w-4xl mx-auto pb-20">
         {#each containers as container}
-          <div
-            class="bg-white dark:bg-stone-700 rounded-lg shadow-md p-6 transform transition-all duration-200 flex flex-col gap-2"
+          <button
+            type="button"
+            class="bg-white dark:bg-stone-700 rounded-lg shadow-md p-6 transform transition-all duration-200 flex flex-col gap-2 cursor-pointer hover:shadow-xl w-full text-left"
+            onclick={() => (selectedContainer = container)}
           >
             <div class="flex flex-row gap-4 items-baseline justify-between">
               <div class="flex flex-row gap-4 items-baseline">
@@ -78,20 +82,22 @@
                   {getSpeciesCount(container)}
                 </p>
               </div>
-              <ContainerActions
-                {container}
-                onEdit={() => (editingContainer = container)}
-                onDelete={async () => {
-                  await pb.collection('containers').delete(container.id)
-                  fetchContainers()
-                }}
-                onWater={async () => {
-                  await pb.collection('containers').update(container.id, {
-                    last_watered: new Date().toISOString(),
-                  })
-                  fetchContainers()
-                }}
-              />
+              <div role="presentation" onclick={(e) => e.stopPropagation()}>
+                <ContainerActions
+                  {container}
+                  onEdit={() => (editingContainer = container)}
+                  onDelete={async () => {
+                    await pb.collection('containers').delete(container.id)
+                    fetchContainers()
+                  }}
+                  onWater={async () => {
+                    await pb.collection('containers').update(container.id, {
+                      last_watered: new Date().toISOString(),
+                    })
+                    fetchContainers()
+                  }}
+                />
+              </div>
             </div>
             <div class="flex flex-row gap-4 text-sm text-stone-500 dark:text-stone-400">
               <p><span class="font-medium">Location:</span> {container.location}</p>
@@ -103,7 +109,7 @@
                   : '-'}
               </p>
             </div>
-          </div>
+          </button>
         {/each}
       </div>
     {/if}
@@ -122,4 +128,8 @@
       container={editingContainer}
     />
   </div>
+
+  {#if selectedContainer}
+    <ContainerDetails container={selectedContainer} onClose={() => (selectedContainer = null)} />
+  {/if}
 </div>
