@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { LogOut, Sprout } from 'lucide-svelte'
   import { pb, getCurrentUser } from './pocketbase.svelte'
+  import Container from './Containers.svelte'
 
   let email = $state('')
   let password = $state('')
@@ -19,13 +21,58 @@
   let currentUser = $derived.by(getCurrentUser)
 </script>
 
+<style>
+  .logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+</style>
+
 {#if currentUser}
-  <p>Logged in as {currentUser.name}</p>
-  <button type="button" onclick={logout}>Logout</button>
+  <div class="flex flex-col min-h-screen">
+    <!-- Top bar -->
+    <div class="flex justify-between gap-2 items-center w-full h-14 px-4">
+      <div class="flex items-center gap-2">
+        <Sprout size={24} class="text-lime-700" />
+      </div>
+      <h1 class="text-sm dark:text-stone-100">My containers</h1>
+      <button type="button" onclick={logout} class="text-sm hover:text-lime-700">
+        <LogOut size={16} />
+      </button>
+    </div>
+    <div class="flex-1 overflow-auto">
+      <Container />
+    </div>
+  </div>
 {:else}
-  <form onsubmit={(e) => e.preventDefault()} class="flex flex-col gap-4">
-    <input type="text" name="email" placeholder="Email" bind:value={email} />
-    <input type="password" name="password" placeholder="Password" bind:value={password} />
-    <button type="submit" onclick={login}>Login</button>
-  </form>
+  <div class="flex flex-col min-h-screen justify-center items-center">
+    <div class="logo">
+      <Sprout size={48} class="text-lime-700" />
+    </div>
+    <div class="flex flex-col gap-4">
+      <form onsubmit={(e) => e.preventDefault()} class="flex flex-col gap-4">
+        <input
+          type="text"
+          name="email"
+          placeholder="Email"
+          bind:value={email}
+          class="px-3 py-2 border rounded-md dark:bg-stone-700 focus:border-lime-700 focus:ring-1 focus:ring-lime-700"
+        />
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          bind:value={password}
+          class="px-3 py-2 border rounded-md dark:bg-stone-700 focus:border-lime-700 focus:ring-1 focus:ring-lime-700"
+        />
+        <button
+          type="submit"
+          onclick={login}
+          class="bg-lime-700 hover:bg-lime-800 text-white rounded-md py-2 px-4 transition-colors duration-200"
+          >Login</button
+        >
+      </form>
+    </div>
+  </div>
 {/if}

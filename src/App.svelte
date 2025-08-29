@@ -1,21 +1,9 @@
 <script lang="ts">
   import Login from './lib/Login.svelte'
-  import { Sprout } from 'lucide-svelte'
+  import Toast from './lib/Toast.svelte'
 </script>
 
-<style>
-  .logo {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1rem;
-  }
-</style>
-
-<main>
-  <div class="logo">
-    <Sprout size={48} color="#4CAF50" />
-  </div>
-  <h1>Welcome to the garden !</h1>
-
+<main class="min-h-screen w-full">
   <Login />
+  <Toast />
 </main>
