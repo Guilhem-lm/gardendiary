@@ -95,9 +95,11 @@
 
     try {
       const formData = new FormData()
-      formData.append('photos+', file) // Using the + operator to append to the array
 
-      // Update the species with the new photo
+      // Add the new photo
+      formData.append('photos+', file)
+
+      // Update the species
       await pb.collection('species').update(species.id, formData)
 
       // Refresh species to get updated photos
@@ -168,13 +170,31 @@
       <h1 class="text-2xl font-semibold">{species.name}</h1>
     </div>
 
-    <button
-      use:melt={$speciesActionsTrigger}
-      class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 px-2"
-      aria-label="Species actions"
-    >
-      <EllipsisVertical size={20} />
-    </button>
+    <div class="flex gap-2 items-center">
+      {#if species.photos && species.photos.length > 0}
+        <label
+          for="photo-upload"
+          class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
+        >
+          Add Photo
+        </label>
+        <input
+          type="file"
+          id="photo-upload"
+          accept="image/*"
+          class="hidden"
+          onchange={handlePhotoUpload}
+        />
+      {/if}
+
+      <button
+        use:melt={$speciesActionsTrigger}
+        class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 px-2"
+        aria-label="Species actions"
+      >
+        <EllipsisVertical size={20} />
+      </button>
+    </div>
 
     {#if $speciesActionsOpen}
       <div

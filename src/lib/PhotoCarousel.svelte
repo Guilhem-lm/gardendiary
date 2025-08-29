@@ -13,7 +13,7 @@
     onUpload?: (event: Event) => void
   }
 
-  const { record, collectionName, onDelete, onUpload } = $props()
+  const { record, collectionName, onDelete, onUpload }: Props = $props()
 
   // Photo carousel state
   let currentPhotoIndex = $state(0)
@@ -85,14 +85,18 @@
     if (!record.photos || !record.photos.length) return
 
     try {
-      // Create a new array without the current photo
+      // Create new arrays without the current photo and its metadata
       const updatedPhotos = record.photos.filter(
         (_: string, index: number) => index !== currentPhotoIndex
       )
+      const updatedPhotosTakenAt = (record.photos_taken_at || []).filter(
+        (_: any, index: number) => index !== currentPhotoIndex
+      )
 
-      // Update the record with the new photos array
+      // Update the record with the new photos array and metadata
       await pb.collection(collectionName).update(record.id, {
         photos: updatedPhotos,
+        photos_taken_at: updatedPhotosTakenAt,
       })
 
       // Adjust current photo index if needed
@@ -205,7 +209,9 @@
         class="absolute bottom-2 right-2 flex items-center gap-4 text-stone-600 dark:text-stone-200 dark:bg-stone-700/50 bg-stone-50/50 rounded-lg p-2"
       >
         <p class="text-lg">
-          {new Date(record.updated).toLocaleDateString()}
+          {record.photos_taken_at?.[currentPhotoIndex]
+            ? new Date(record.photos_taken_at[currentPhotoIndex]).toLocaleDateString()
+            : 'No date available'}
         </p>
         <button
           use:melt={$deletePhotoTrigger}

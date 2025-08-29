@@ -1,24 +1,13 @@
 <!-- ContainerDetails.svelte -->
 <script lang="ts">
   import { fade, fly, scale } from 'svelte/transition'
-  import {
-    ArrowLeft,
-    Droplets,
-    Settings,
-    Check,
-    X,
-    Plus,
-    EllipsisVertical,
-    Trash2,
-    ChevronLeft,
-    ChevronRight,
-  } from 'lucide-svelte'
+  import { ArrowLeft, Droplets, Settings, X, Plus, EllipsisVertical, Trash2 } from 'lucide-svelte'
   import type { Container, Species } from './types'
   import { pb } from './pocketbase.svelte'
   import { toast } from './toast'
-  import { getContainerPlants, formatPlantsCount, getTotalPlantsCount } from './utils/container'
   import { createDialog, createDropdownMenu, melt } from '@melt-ui/svelte'
   import PhotoCarousel from './PhotoCarousel.svelte'
+  import { getTotalPlantsCount } from './utils/container'
 
   interface Props {
     container: Container
@@ -254,24 +243,25 @@
     }
   }
 
-  function startEditingPlant(plant: any) {
-    editingPlantId = plant.id
-    editingPlantQuantity = plant.quantity || 1
-  }
-
   async function handlePhotoUpload(event: Event) {
     const input = event.target as HTMLInputElement
     const file = input.files?.[0]
     if (!file) return
 
     try {
-      // Get current photos array
-      const currentPhotos = container.photos || []
-
       const formData = new FormData()
-      formData.append('photos+', file) // Using the + operator to append to the array
 
-      // Update the container with the new photo
+      // Add the new photo
+      formData.append('photos+', file)
+      formData.append(
+        'photos_taken_at',
+        JSON.stringify([
+          ...(container.photos_taken_at || []),
+          new Date(file.lastModified).toISOString(),
+        ])
+      )
+
+      // Update the container
       await pb.collection('containers').update(container.id, formData)
 
       // Refresh container to get updated photos
@@ -309,6 +299,22 @@
     </div>
 
     <div class="flex gap-2">
+      {#if container.photos && container.photos.length > 0}
+        <label
+          for="photo-upload"
+          class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
+        >
+          Add Photo
+        </label>
+        <input
+          type="file"
+          id="photo-upload"
+          accept="image/*"
+          class="hidden"
+          onchange={handlePhotoUpload}
+        />
+      {/if}
+
       <button
         use:melt={$containerActionsTrigger}
         class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 px-2"

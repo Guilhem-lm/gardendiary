@@ -1,9 +1,7 @@
 <script lang="ts">
   import { pb } from './pocketbase.svelte'
   import { onMount } from 'svelte'
-  import type { RecordModel } from 'pocketbase'
   import AddContainer from './AddContainer.svelte'
-  import ContainerActions from './ContainerActions.svelte'
   import ContainerDetails from './ContainerDetails.svelte'
   import { Droplets } from 'lucide-svelte'
   import { toast } from './toast'
@@ -59,47 +57,23 @@
             <!-- Header row -->
             <div class="flex justify-between items-start">
               <div class="flex-1">
-                <div class="flex items-baseline justify-between">
-                  <div class="flex flex-row gap-2 items-baseline">
-                    <h2 class="text-lg font-semibold">{container.name}</h2>
-                    <p class="text-sm text-stone-600 dark:text-stone-300 mr-4">
-                      {formatPlantsCount(container)}
-                    </p>
-                    {#if getContainerPlants(container).length > 0}
-                      <div class="mt-1 flex flex-wrap gap-1.5">
-                        {#each getContainerPlants(container) as plant}
-                          <div class="bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded text-sm">
-                            {#if plant.quantity > 1}
-                              {plant.quantity}
-                            {/if}
-                            {plant.species}
-                          </div>
-                        {/each}
-                      </div>
-                    {/if}
-                  </div>
-                  <div role="presentation" onclick={(e) => e.stopPropagation()}>
-                    <ContainerActions
-                      {container}
-                      onDelete={async () => {
-                        // Fetch associated plants
-                        const plants = getContainerPlants(container)
-                        // Delete each plant
-                        for (const plant of plants) {
-                          await pb.collection('plants').delete(plant.id)
-                        }
-                        // Delete the container
-                        await pb.collection('containers').delete(container.id)
-                        fetchContainers()
-                      }}
-                      onWater={async () => {
-                        await pb.collection('containers').update(container.id, {
-                          last_watered: new Date().toISOString(),
-                        })
-                        fetchContainers()
-                      }}
-                    />
-                  </div>
+                <div class="flex flex-row gap-2 items-baseline">
+                  <h2 class="text-lg font-semibold">{container.name}</h2>
+                  <p class="text-sm text-stone-600 dark:text-stone-300 mr-4">
+                    {formatPlantsCount(container)}
+                  </p>
+                  {#if getContainerPlants(container).length > 0}
+                    <div class="mt-1 flex flex-wrap gap-1.5">
+                      {#each getContainerPlants(container) as plant}
+                        <div class="bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded text-sm">
+                          {#if plant.quantity > 1}
+                            {plant.quantity}
+                          {/if}
+                          {plant.species}
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
                 </div>
               </div>
             </div>

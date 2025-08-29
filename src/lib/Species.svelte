@@ -6,7 +6,6 @@
   import type { Species } from './types'
   import AddSpecies from './AddSpecies.svelte'
   import SpeciesDetails from './SpeciesDetails.svelte'
-  import SpeciesActions from './SpeciesAction.svelte'
 
   let species = $state<Species[]>([])
   let loading = $state(true)
@@ -53,18 +52,11 @@
             class="bg-white dark:bg-stone-700 rounded-lg shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow w-full text-left"
             onclick={() => (selectedSpecies = specie)}
           >
-            <div class="flex justify-between items-start">
-              <div class="flex flex-col gap-1">
-                <h2 class="text-lg font-semibold">{specie.name}</h2>
-                {#if specie.description}
-                  <p class="text-sm text-stone-600 dark:text-stone-300">{specie.description}</p>
-                {/if}
-              </div>
-
-              <!-- Actions dropdown -->
-              <div role="presentation" onclick={(e) => e.stopPropagation()}>
-                <SpeciesActions {specie} onDelete={fetchSpecies} />
-              </div>
+            <div class="flex flex-col gap-1">
+              <h2 class="text-lg font-semibold">{specie.name}</h2>
+              {#if specie.description}
+                <p class="text-sm text-stone-600 dark:text-stone-300">{specie.description}</p>
+              {/if}
             </div>
           </div>
         {/each}
