@@ -59,7 +59,9 @@
               <div class="flex-shrink-0">
                 {#if container.photos && container.photos.length > 0}
                   <img
-                    src={pb.files.getURL(container, container.photos[0], { thumb: '100x100' })}
+                    src={pb.files.getURL(container, container.photos[container.photos.length - 1], {
+                      thumb: '100x100',
+                    })}
                     alt={`${container.name} thumbnail`}
                     class="w-16 h-16 object-cover rounded-lg"
                   />
@@ -110,9 +112,9 @@
                     <button
                       type="button"
                       class="text-stone-400 hover:text-lime-700 dark:text-stone-500 dark:hover:text-lime-700"
-                      onclick={(e) => {
+                      onclick={async (e) => {
                         e.stopPropagation()
-                        pb.collection('containers').update(container.id, {
+                        await pb.collection('containers').update(container.id, {
                           last_watered: new Date().toISOString(),
                         })
                         fetchContainers()

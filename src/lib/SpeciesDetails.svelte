@@ -106,6 +106,9 @@
       const updated = await pb.collection('species').getOne<Species>(species.id)
       Object.assign(species, updated)
 
+      // Refresh photo carousel to show the new photo
+      photoCarousel?.goToLastPhoto()
+
       toast('Photo added successfully', { type: 'success' })
     } catch (error) {
       console.error('Error uploading photo:', error)
@@ -149,6 +152,8 @@
   $effect(() => {
     fetchPlants()
   })
+
+  let photoCarousel: PhotoCarousel | undefined = $state(undefined)
 </script>
 
 <div
@@ -246,6 +251,7 @@
           Object.assign(species, updated)
         }}
         onUpload={handlePhotoUpload}
+        bind:this={photoCarousel}
       />
 
       <!-- Species Details -->

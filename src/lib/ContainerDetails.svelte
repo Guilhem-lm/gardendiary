@@ -269,6 +269,8 @@
       Object.assign(container, updated)
 
       toast('Photo added successfully', { type: 'success' })
+
+      photoCarousel?.goToLastPhoto()
     } catch (error) {
       console.error('Error uploading photo:', error)
       toast('Failed to upload photo', { type: 'error' })
@@ -277,6 +279,8 @@
     // Reset the input
     input.value = ''
   }
+
+  let photoCarousel: PhotoCarousel | undefined = $state(undefined)
 </script>
 
 <div
@@ -375,6 +379,7 @@
             Object.assign(container, updated)
           }}
           onUpload={handlePhotoUpload}
+          bind:this={photoCarousel}
         />
 
         <!-- Container Details -->
