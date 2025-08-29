@@ -20,7 +20,7 @@
   }
 </script>
 
-<div class="fixed top-4 right-4 z-50 flex flex-col gap-2">
+<div class="fixed top-4 right-4 z-5000 flex flex-col gap-2">
   {#each $toasts as toast (toast.id)}
     {@const Icon = icons[toast.data?.type || 'info']}
     <div

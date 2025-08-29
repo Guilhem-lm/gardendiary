@@ -7,12 +7,11 @@
 
   interface Props {
     container: Container
-    onEdit: () => void
     onDelete: () => void
     onWater: () => void
   }
 
-  const { container, onEdit, onDelete, onWater }: Props = $props()
+  const { container, onDelete, onWater }: Props = $props()
 
   const {
     elements: { trigger, menu, overlay, item: menuItem },
@@ -77,14 +76,7 @@
     <Droplets size={16} />
     Water Plants
   </button>
-  <button
-    use:melt={$menuItem}
-    class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700 outline-none focus:bg-stone-100 dark:focus:bg-stone-700"
-    onclick={onEdit}
-  >
-    <Pen size={16} />
-    Edit
-  </button>
+
   <button
     use:melt={$menuItem}
     use:melt={$dialogTrigger}

@@ -10,7 +10,6 @@
   import { getContainerPlants, formatPlantsCount } from './utils/container'
   import type { Container } from './types'
 
-  let editingContainer = $state<Container | null>(null)
   let selectedContainer = $state<Container | null>(null)
 
   let containers = $state<Container[]>([])
@@ -82,7 +81,6 @@
                   <div role="presentation" onclick={(e) => e.stopPropagation()}>
                     <ContainerActions
                       {container}
-                      onEdit={() => (editingContainer = container)}
                       onDelete={async () => {
                         await pb.collection('containers').delete(container.id)
                         fetchContainers()
@@ -134,17 +132,11 @@
     {/if}
   </div>
   <!-- Add button - floating on mobile, fixed on desktop -->
-  <div
-    class="fixed md:absolute right-4 {editingContainer
-      ? 'hidden'
-      : ''} md:top-6 md:right-10 bottom-18"
-  >
+  <div class="fixed md:absolute right-4 md:top-6 md:right-10 bottom-18">
     <AddContainer
       onContainerAdded={() => {
         fetchContainers()
-        editingContainer = null
       }}
-      container={editingContainer}
     />
   </div>
 
