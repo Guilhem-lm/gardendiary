@@ -82,6 +82,13 @@
                     <ContainerActions
                       {container}
                       onDelete={async () => {
+                        // Fetch associated plants
+                        const plants = getContainerPlants(container)
+                        // Delete each plant
+                        for (const plant of plants) {
+                          await pb.collection('plants').delete(plant.id)
+                        }
+                        // Delete the container
                         await pb.collection('containers').delete(container.id)
                         fetchContainers()
                       }}
