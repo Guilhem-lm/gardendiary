@@ -1,8 +1,9 @@
 import type { RecordModel } from 'pocketbase'
 
-export interface Species {
+export interface Species extends RecordModel {
   id: string
   name: string
+  description?: string
 }
 
 export interface Plant {
