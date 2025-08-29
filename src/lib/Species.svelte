@@ -79,7 +79,7 @@
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
-            class="bg-white dark:bg-stone-700 rounded-lg shadow-md p-6 cursor-pointer hover:shadow-xl transition-shadow w-full text-left"
+            class="bg-white dark:bg-stone-700 rounded-lg shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow w-full text-left"
             onclick={() => (selectedSpecies = specie)}
           >
             <div class="flex justify-between items-start">
@@ -187,7 +187,11 @@
   </div>
 
   <!-- Add button - floating on mobile, fixed on desktop -->
-  <div class="fixed md:absolute right-4 {editingSpecies ? 'hidden' : ''} md:bottom-10 bottom-18">
+  <div
+    class="fixed md:absolute right-4 {editingSpecies
+      ? 'hidden'
+      : ''} md:top-6 md:right-10 bottom-18"
+  >
     <AddSpecies
       species={editingSpecies}
       onSpeciesAdded={() => {

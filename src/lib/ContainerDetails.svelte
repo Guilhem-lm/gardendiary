@@ -34,6 +34,25 @@
       toast('Failed to update watering time', { type: 'error' })
     }
   }
+
+  function getSpeciesCount(container: Container): string {
+    if (!container.expand?.plants || container.expand.plants.length === 0) {
+      return '0 plants'
+    }
+
+    const speciesCount = container.expand.plants.reduce(
+      (acc, plant) => {
+        const speciesName = plant.expand?.species.name || 'Unknown'
+        acc[speciesName] = (acc[speciesName] || 0) + 1
+        return acc
+      },
+      {} as Record<string, number>
+    )
+
+    return Object.entries(speciesCount)
+      .map(([species, count]) => `${count} ${species}`)
+      .join(', ')
+  }
 </script>
 
 <div
@@ -44,50 +63,46 @@
   <div
     class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700"
   >
-    <div class="max-w-4xl mx-auto px-4 py-4 flex justify-between items-center">
+    <div class="max-w-4xl mx-auto px-4 py-4">
       <button
         onclick={onClose}
         class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
       >
         <ArrowLeft size={24} />
       </button>
-      <button
-        onclick={waterPlants}
-        class="flex items-center gap-2 px-4 py-2 bg-lime-700 hover:bg-lime-800 text-white rounded-lg transition-colors"
-      >
-        <Droplets size={16} />
-        Water Plants
-      </button>
     </div>
   </div>
 
   <!-- Content -->
   <div class="max-w-4xl mx-auto p-4">
-    <div class="bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6">
-      <h1 class="text-2xl font-bold mb-6">{container.name}</h1>
+    <div class="bg-white dark:bg-stone-800 rounded-lg shadow-sm p-6">
+      <div class="flex justify-between items-start">
+        <h1 class="text-2xl font-semibold">{container.name}</h1>
+      </div>
 
-      <div class="grid gap-6">
-        <!-- Basic Info -->
-        <div>
-          <h2 class="text-lg font-semibold mb-3">Details</h2>
-          <div class="grid sm:grid-cols-2 gap-4">
-            <div>
-              <p class="text-sm text-stone-500 dark:text-stone-400">Location</p>
-              <p class="font-medium">{container.location}</p>
-            </div>
-            <div>
-              <p class="text-sm text-stone-500 dark:text-stone-400">Size</p>
-              <p class="font-medium">{container.size}</p>
-            </div>
-            <div>
-              <p class="text-sm text-stone-500 dark:text-stone-400">Last Watered</p>
-              <p class="font-medium">{formatDate(container.last_watered)}</p>
-            </div>
+      <div class="flex flex-col gap-3 mt-4 text-sm text-stone-500 dark:text-stone-400">
+        <p class="text-stone-600 dark:text-stone-300">{getSpeciesCount(container)}</p>
+
+        <div class="flex flex-col gap-2">
+          <p><span class="font-medium">Location:</span> {container.location}</p>
+          <p><span class="font-medium">Size:</span> {container.size}</p>
+          <div class="flex items-center gap-2">
+            <p>
+              <span class="font-medium">Last Watered:</span>
+              {formatDate(container.last_watered)}
+            </p>
+            <button
+              type="button"
+              class="text-stone-400 hover:text-lime-700 dark:text-stone-500 dark:hover:text-lime-700"
+              onclick={waterPlants}
+            >
+              <Droplets size={16} />
+            </button>
           </div>
         </div>
 
-        <!-- Plants -->
-        <div>
+        <!-- Plants List -->
+        <div class="mt-6">
           <h2 class="text-lg font-semibold mb-3">Plants</h2>
           {#if !container.expand?.plants || container.expand.plants.length === 0}
             <p class="text-stone-500 dark:text-stone-400">No plants in this container yet.</p>
