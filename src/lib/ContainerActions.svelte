@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { MoreVertical, Edit2, Trash2, Droplets, AlertTriangle } from 'lucide-svelte'
-  import { createPopover, createDialog, melt } from '@melt-ui/svelte'
+  import { EllipsisVertical, Trash2, Droplets, TriangleAlert, Pen } from 'lucide-svelte'
+  import { createDropdownMenu, createDialog, melt } from '@melt-ui/svelte'
   import { fade, scale } from 'svelte/transition'
   import type { Container } from './types'
   import { toast } from './toast'
@@ -12,16 +12,17 @@
     onWater: () => void
   }
 
-  const { container, onEdit, onDelete, onWater } = $props()
+  const { container, onEdit, onDelete, onWater }: Props = $props()
 
   const {
-    elements: { trigger, content, arrow, overlay: popoverOverlay },
-    states: { open: popoverOpen },
-  } = createPopover({
-    forceVisible: false,
+    elements: { trigger, menu, overlay, item: menuItem },
+    states: { open },
+  } = createDropdownMenu({
     positioning: {
       placement: 'bottom-end',
     },
+    preventScroll: true,
+    loop: true,
   })
 
   const {
@@ -36,6 +37,7 @@
     states: { open: dialogOpen },
   } = createDialog({
     forceVisible: false,
+    preventScroll: true,
   })
 </script>
 
@@ -44,21 +46,25 @@
   class="text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300"
   aria-label="Container actions"
 >
-  <MoreVertical size={20} />
+  <EllipsisVertical size={20} />
 </button>
 
-{#if $popoverOpen}
+{#if $open}
   <div
-    use:melt={$popoverOverlay}
+    use:melt={$overlay}
     class="fixed inset-0 bg-black/20 dark:bg-black/50"
     transition:fade={{ duration: 100 }}
   ></div>
 {/if}
 
-<div use:melt={$content} class="bg-white dark:bg-stone-800 rounded-lg shadow-lg py-1 w-36 z-50">
-  <div use:melt={$arrow}></div>
+<div
+  use:melt={$menu}
+  class="bg-white dark:bg-stone-800 rounded-lg shadow-lg py-1 w-36 z-50"
+  transition:scale={{ duration: 150, start: 0.95 }}
+>
   <button
-    class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
+    use:melt={$menuItem}
+    class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700 outline-none focus:bg-stone-100 dark:focus:bg-stone-700"
     onclick={async () => {
       try {
         await onWater()
@@ -66,28 +72,23 @@
       } catch (error) {
         toast('Failed to update watering time', { type: 'error' })
       }
-      $popoverOpen = false
     }}
   >
     <Droplets size={16} />
     Water Plants
   </button>
   <button
-    class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
-    onclick={() => {
-      onEdit()
-      $popoverOpen = false
-    }}
+    use:melt={$menuItem}
+    class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700 outline-none focus:bg-stone-100 dark:focus:bg-stone-700"
+    onclick={onEdit}
   >
-    <Edit2 size={16} />
+    <Pen size={16} />
     Edit
   </button>
   <button
+    use:melt={$menuItem}
     use:melt={$dialogTrigger}
-    class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700"
-    onclick={() => {
-      $popoverOpen = false
-    }}
+    class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700 outline-none focus:bg-stone-100 dark:focus:bg-stone-700"
   >
     <Trash2 size={16} />
     Delete
@@ -107,7 +108,7 @@
     transition:scale={{ duration: 150, start: 0.95 }}
   >
     <div class="flex items-center gap-3 text-red-600">
-      <AlertTriangle size={24} />
+      <TriangleAlert size={24} />
       <h2 use:melt={$title} class="text-lg font-semibold">Delete Container</h2>
     </div>
 
