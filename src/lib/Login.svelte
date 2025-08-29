@@ -2,20 +2,32 @@
   import { LogOut, Sprout } from 'lucide-svelte'
   import { pb, getCurrentUser } from './pocketbase.svelte'
   import Container from './Containers.svelte'
+  import { toast } from './toast'
 
   let email = $state('')
   let password = $state('')
+  let loading = $state(false)
 
-  function login() {
+  async function login() {
+    if (!email || !password) {
+      toast('Please enter your email and password', { type: 'error' })
+      return
+    }
+
+    loading = true
     try {
-      pb.collection('users').authWithPassword(email, password)
+      await pb.collection('users').authWithPassword(email, password)
     } catch (error) {
-      console.error(error)
+      const message = error instanceof Error ? error.message : 'Invalid email or password'
+      toast(message, { type: 'error' })
+    } finally {
+      loading = false
     }
   }
 
   function logout() {
     pb.authStore.clear()
+    toast('Logged out successfully', { type: 'info' })
   }
 
   let currentUser = $derived.by(getCurrentUser)
@@ -69,9 +81,11 @@
         <button
           type="submit"
           onclick={login}
-          class="bg-lime-700 hover:bg-lime-800 text-white rounded-md py-2 px-4 transition-colors duration-200"
-          >Login</button
+          disabled={loading}
+          class="bg-lime-700 hover:bg-lime-800 text-white rounded-md py-2 px-4 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
       </form>
     </div>
   </div>
