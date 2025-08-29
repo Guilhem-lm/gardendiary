@@ -99,6 +99,20 @@
   let editingPlantQuantity = $state(1)
   let deletingPlantId = $state<string | null>(null)
 
+  // Full screen photo dialog
+  const {
+    elements: {
+      trigger: fullscreenPhotoTrigger,
+      content: fullscreenPhotoContent,
+      overlay: fullscreenPhotoOverlay,
+      close: fullscreenPhotoClose,
+    },
+    states: { open: fullscreenPhotoOpen },
+  } = createDialog({
+    role: 'dialog',
+    preventScroll: true,
+  })
+
   // Delete photo dialog
   const {
     elements: {
@@ -399,6 +413,10 @@
         <div class="w-full max-w-80 aspect-square shrink-0 relative group">
           {#if container.photos && container.photos.length > 0}
             <div class="w-full h-full" ontouchstart={handleTouchStart} ontouchend={handleTouchEnd}>
+              <div
+                class="absolute inset-0 cursor-zoom-in z-10"
+                use:melt={$fullscreenPhotoTrigger}
+              ></div>
               <img
                 src={pb.files.getURL(container, container.photos[currentPhotoIndex])}
                 alt={`${container.name} photo ${currentPhotoIndex + 1} of ${container.photos.length}`}
@@ -407,29 +425,31 @@
 
               <!-- Navigation buttons -->
               {#if container.photos.length > 1}
-                <div
-                  class="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                <button
+                  class="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                  onclick={(e) => {
+                    e.stopPropagation()
+                    previousPhoto()
+                  }}
+                  disabled={currentPhotoIndex === 0}
+                  aria-label="Previous photo"
                 >
-                  <button
-                    class="p-1 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50"
-                    onclick={previousPhoto}
-                    disabled={currentPhotoIndex === 0}
-                    aria-label="Previous photo"
-                  >
-                    <ChevronLeft size={24} />
-                  </button>
-                  <button
-                    class="p-1 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50"
-                    onclick={nextPhoto}
-                    disabled={currentPhotoIndex === container.photos.length - 1}
-                    aria-label="Next photo"
-                  >
-                    <ChevronRight size={24} />
-                  </button>
-                </div>
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                  onclick={(e) => {
+                    e.stopPropagation()
+                    nextPhoto()
+                  }}
+                  disabled={currentPhotoIndex === container.photos.length - 1}
+                  aria-label="Next photo"
+                >
+                  <ChevronRight size={24} />
+                </button>
 
                 <!-- Photo indicators -->
-                <div class="absolute bottom-2 inset-x-0 flex justify-center gap-1">
+                <div class="absolute bottom-2 inset-x-0 flex justify-center gap-1 z-20">
                   {#each container.photos as _, i}
                     <button
                       class="w-2 h-2 rounded-full transition-colors {i === currentPhotoIndex
@@ -718,6 +738,80 @@
 </div>
 
 <!-- Delete Plant Dialog -->
+{#if $fullscreenPhotoOpen}
+  <div
+    use:melt={$fullscreenPhotoOverlay}
+    class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[400]"
+    transition:fade={{ duration: 150 }}
+  ></div>
+
+  <div
+    use:melt={$fullscreenPhotoContent}
+    class="fixed inset-0 z-[401] flex items-center justify-center p-4"
+    transition:fade={{ duration: 150 }}
+  >
+    <div class="relative w-full h-full flex items-center justify-center">
+      <!-- Close button -->
+      <button
+        use:melt={$fullscreenPhotoClose}
+        class="absolute top-4 right-4 text-white/75 hover:text-white"
+      >
+        <X size={24} />
+      </button>
+
+      <!-- Navigation buttons -->
+      {#if container.photos && container.photos.length > 1}
+        <div class="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between">
+          <button
+            class="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50"
+            onclick={(e) => {
+              e.stopPropagation()
+              previousPhoto()
+            }}
+            disabled={currentPhotoIndex === 0}
+            aria-label="Previous photo"
+          >
+            <ChevronLeft size={32} />
+          </button>
+          <button
+            class="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50"
+            onclick={(e) => {
+              e.stopPropagation()
+              nextPhoto()
+            }}
+            disabled={currentPhotoIndex === container.photos.length - 1}
+            aria-label="Next photo"
+          >
+            <ChevronRight size={32} />
+          </button>
+        </div>
+      {/if}
+
+      <!-- Full screen image -->
+      <img
+        src={pb.files.getURL(container, container.photos[currentPhotoIndex])}
+        alt={`${container.name} photo ${currentPhotoIndex + 1} of ${container.photos.length}`}
+        class="max-h-full max-w-full object-contain"
+      />
+
+      <!-- Photo indicators -->
+      {#if container.photos && container.photos.length > 1}
+        <div class="absolute bottom-4 inset-x-0 flex justify-center gap-1">
+          {#each container.photos as _, i}
+            <button
+              class="w-2 h-2 rounded-full transition-colors {i === currentPhotoIndex
+                ? 'bg-white'
+                : 'bg-white/50 hover:bg-white/75'}"
+              onclick={() => (currentPhotoIndex = i)}
+              aria-label="Go to photo {i + 1}"
+            ></button>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  </div>
+{/if}
+
 {#if $deletePhotoOpen}
   <div
     use:melt={$deletePhotoOverlay}
