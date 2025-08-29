@@ -117,7 +117,7 @@
   }
 </script>
 
-<div class="w-full max-w-80 aspect-square shrink-0 relative group mx-auto md:mx-0">
+<div class="w-full max-w-96 aspect-square shrink-0 relative group mx-auto md:mx-0">
   {#if record.photos && record.photos.length > 0}
     <div class="w-full h-full" ontouchstart={handleTouchStart} ontouchend={handleTouchEnd}>
       <div class="absolute inset-0 cursor-zoom-in z-10" use:melt={$fullscreenPhotoTrigger}></div>

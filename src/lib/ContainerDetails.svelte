@@ -379,7 +379,7 @@
 
         <!-- Container Details -->
         <div
-          class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-700 rounded-lg p-4 md:grow min-w-0 md:h-80 shadow-sm"
+          class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-700 rounded-lg p-4 md:grow min-w-0 md:h-96 shadow-sm"
         >
           <div class="flex flex-col gap-2">
             <!-- Location -->

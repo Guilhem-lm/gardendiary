@@ -249,7 +249,7 @@
       />
 
       <!-- Species Details -->
-      <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm md:grow min-w-0 md:h-80">
+      <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm md:grow min-w-0 md:h-96">
         <div class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400">
           <!-- Description -->
           <div class="flex items-start gap-2">
