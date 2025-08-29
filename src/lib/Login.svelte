@@ -1,8 +1,12 @@
 <script lang="ts">
-  import { LogOut, Sprout } from 'lucide-svelte'
+  import { Sprout } from 'lucide-svelte'
   import { pb, getCurrentUser } from './pocketbase.svelte'
   import Container from './Containers.svelte'
+  import Species from './Species.svelte'
+  import Navigation from './Navigation.svelte'
   import { toast } from './toast'
+
+  let currentView = $state<'containers' | 'species'>('containers')
 
   let email = $state('')
   let password = $state('')
@@ -42,20 +46,19 @@
 </style>
 
 {#if currentUser}
-  <div class="flex flex-col min-h-screen">
-    <!-- Top bar -->
-    <div class="flex justify-between gap-2 items-center w-full h-14 px-4">
-      <div class="flex items-center gap-2">
-        <Sprout size={24} class="text-lime-700" />
+  <div class="flex min-h-screen h-screen bg-stone-50 dark:bg-stone-900">
+    <Navigation bind:currentView />
+
+    <!-- Main content -->
+    <main class="flex-1 h-full overflow-hidden">
+      <div class="h-full">
+        {#if currentView === 'containers'}
+          <Container />
+        {:else if currentView === 'species'}
+          <Species />
+        {/if}
       </div>
-      <h1 class="text-sm dark:text-stone-100">My containers</h1>
-      <button type="button" onclick={logout} class="text-sm hover:text-lime-700">
-        <LogOut size={16} />
-      </button>
-    </div>
-    <div class="flex-1 overflow-auto">
-      <Container />
-    </div>
+    </main>
   </div>
 {:else}
   <div class="flex flex-col min-h-screen justify-center items-center">

@@ -108,17 +108,14 @@
       </div>
     {/if}
   </div>
-  <div
-    class="fixed bottom-0 left-0 right-0 p-4 bg-stone-100/80 dark:bg-stone-800/80 backdrop-blur-sm"
-  >
-    <div class="max-w-4xl mx-auto flex justify-center">
-      <AddContainer
-        onContainerAdded={() => {
-          fetchContainers()
-          editingContainer = null
-        }}
-        container={editingContainer}
-      />
-    </div>
+  <!-- Add button - floating on mobile, fixed on desktop -->
+  <div class="fixed md:absolute right-4 {editingContainer ? 'hidden' : ''} md:bottom-20 bottom-24">
+    <AddContainer
+      onContainerAdded={() => {
+        fetchContainers()
+        editingContainer = null
+      }}
+      container={editingContainer}
+    />
   </div>
 </div>
