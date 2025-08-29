@@ -7,30 +7,11 @@
   import ContainerDetails from './ContainerDetails.svelte'
   import { Droplets } from 'lucide-svelte'
   import { toast } from './toast'
+  import { getContainerSpecies } from './utils/container'
+  import type { Container } from './types'
 
   let editingContainer = $state<Container | null>(null)
   let selectedContainer = $state<Container | null>(null)
-
-  import type { Container } from './types'
-
-  function getSpeciesCount(container: Container): string {
-    if (!container.expand?.plants || container.expand.plants.length === 0) {
-      return '0 plants'
-    }
-
-    const speciesCount = container.expand.plants.reduce(
-      (acc, plant) => {
-        const speciesName = plant.expand?.species.name || 'Unknown'
-        acc[speciesName] = (acc[speciesName] || 0) + 1
-        return acc
-      },
-      {} as Record<string, number>
-    )
-
-    return Object.entries(speciesCount)
-      .map(([species, count]) => `${count} ${species}`)
-      .join(', ')
-  }
 
   let containers = $state<Container[]>([])
   let loading = $state(true)
@@ -82,13 +63,9 @@
                 <div class="flex items-baseline justify-between">
                   <div class="flex flex-row gap-2">
                     <h2 class="text-lg font-semibold">{container.name}</h2>
-                    {#if container.expand?.plants && container.expand.plants.length > 0}
+                    {#if getContainerSpecies(container).length > 0}
                       <div class="mt-1 flex flex-wrap gap-1.5">
-                        {#each Object.entries(container.expand.plants.reduce((acc, plant) => {
-                              const speciesName = plant.expand?.species.name || 'Unknown'
-                              acc[speciesName] = (acc[speciesName] || 0) + 1
-                              return acc
-                            }, {} as Record<string, number>)) as [species, count]}
+                        {#each getContainerSpecies(container) as { species, count }}
                           <div class="bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded text-sm">
                             {count}
                             {species}
