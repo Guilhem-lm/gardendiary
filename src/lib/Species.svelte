@@ -52,11 +52,33 @@
             class="bg-white dark:bg-stone-700 rounded-lg shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow w-full text-left"
             onclick={() => (selectedSpecies = specie)}
           >
-            <div class="flex flex-col gap-1">
-              <h2 class="text-lg font-semibold">{specie.name}</h2>
-              {#if specie.description}
-                <p class="text-sm text-stone-600 dark:text-stone-300">{specie.description}</p>
-              {/if}
+            <div class="flex gap-4">
+              <!-- Thumbnail -->
+              <div class="flex-shrink-0">
+                {#if specie.photos && specie.photos.length > 0}
+                  <img
+                    src={pb.files.getURL(specie, specie.photos[0], { thumb: '100x100' })}
+                    alt={`${specie.name} thumbnail`}
+                    class="w-16 h-16 object-cover rounded-lg"
+                  />
+                {:else}
+                  <div
+                    class="w-16 h-16 bg-stone-100 dark:bg-stone-600 rounded-lg flex items-center justify-center"
+                  >
+                    <span class="text-stone-400 dark:text-stone-500 text-xs">No photo</span>
+                  </div>
+                {/if}
+              </div>
+
+              <!-- Content -->
+              <div class="flex flex-col gap-1 flex-1 min-w-0">
+                <h2 class="text-lg font-semibold">{specie.name}</h2>
+                {#if specie.description}
+                  <p class="text-sm text-stone-600 dark:text-stone-300 line-clamp-2">
+                    {specie.description}
+                  </p>
+                {/if}
+              </div>
             </div>
           </div>
         {/each}
