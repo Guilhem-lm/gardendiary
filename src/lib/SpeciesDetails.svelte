@@ -6,6 +6,7 @@
   import { pb } from './pocketbase.svelte'
   import { toast } from './toast'
   import { createDialog, createDropdownMenu, melt } from '@melt-ui/svelte'
+  import PhotoCarousel from './PhotoCarousel.svelte'
 
   interface Props {
     species: Species
@@ -85,6 +86,32 @@
       console.error('Error updating species:', error)
       toast('Failed to update species', { type: 'error' })
     }
+  }
+
+  async function handlePhotoUpload(event: Event) {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+
+    try {
+      const formData = new FormData()
+      formData.append('photos+', file) // Using the + operator to append to the array
+
+      // Update the species with the new photo
+      await pb.collection('species').update(species.id, formData)
+
+      // Refresh species to get updated photos
+      const updated = await pb.collection('species').getOne<Species>(species.id)
+      Object.assign(species, updated)
+
+      toast('Photo added successfully', { type: 'success' })
+    } catch (error) {
+      console.error('Error uploading photo:', error)
+      toast('Failed to upload photo', { type: 'error' })
+    }
+
+    // Reset the input
+    input.value = ''
   }
 
   async function deleteSpecies() {
@@ -189,12 +216,26 @@
 
   <!-- Content -->
   <div class="max-w-4xl mx-auto p-4 flex flex-col gap-4">
-    <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm">
-      <div class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400">
-        <!-- Description -->
-        <div class="flex items-start gap-2">
-          <span class="font-medium">Description:</span>
-          <p class="flex-1">{species.description || 'No description'}</p>
+    <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
+      <!-- Photo Carousel -->
+      <PhotoCarousel
+        record={species}
+        collectionName="species"
+        onDelete={async () => {
+          const updated = await pb.collection('species').getOne<Species>(species.id)
+          Object.assign(species, updated)
+        }}
+        onUpload={handlePhotoUpload}
+      />
+
+      <!-- Species Details -->
+      <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm md:grow min-w-0 md:h-80">
+        <div class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400">
+          <!-- Description -->
+          <div class="flex items-start gap-2">
+            <span class="font-medium">Description:</span>
+            <p class="flex-1">{species.description || 'No description'}</p>
+          </div>
         </div>
       </div>
     </div>
