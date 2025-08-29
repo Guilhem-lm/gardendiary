@@ -1,7 +1,18 @@
 <!-- ContainerDetails.svelte -->
 <script lang="ts">
   import { fade, fly, scale } from 'svelte/transition'
-  import { ArrowLeft, Droplets, Pen, Check, X, Plus, EllipsisVertical, Trash2 } from 'lucide-svelte'
+  import {
+    ArrowLeft,
+    Droplets,
+    Pen,
+    Check,
+    X,
+    Plus,
+    EllipsisVertical,
+    Trash2,
+    ChevronLeft,
+    ChevronRight,
+  } from 'lucide-svelte'
   import type { Container, Species } from './types'
   import { pb } from './pocketbase.svelte'
   import { toast } from './toast'
@@ -15,12 +26,94 @@
 
   const { container, onClose }: Props = $props()
 
+  // Photo carousel state
+  let currentPhotoIndex = $state(0)
+
+  function nextPhoto() {
+    if (container.photos && currentPhotoIndex < container.photos.length - 1) {
+      currentPhotoIndex++
+    }
+  }
+
+  function previousPhoto() {
+    if (currentPhotoIndex > 0) {
+      currentPhotoIndex--
+    }
+  }
+
+  function handleTouchStart(event: TouchEvent) {
+    const touch = event.touches[0]
+    touchStartX = touch.clientX
+  }
+
+  function handleTouchEnd(event: TouchEvent) {
+    const touch = event.changedTouches[0]
+    const deltaX = touch.clientX - touchStartX
+
+    if (Math.abs(deltaX) > 50) {
+      // minimum swipe distance
+      if (deltaX > 0) {
+        previousPhoto()
+      } else {
+        nextPhoto()
+      }
+    }
+  }
+
+  let touchStartX = 0
+
+  async function deleteCurrentPhoto() {
+    if (!container.photos || !container.photos.length) return
+
+    try {
+      // Create a new array without the current photo
+      const updatedPhotos = container.photos.filter(
+        (_: string, index: number) => index !== currentPhotoIndex
+      )
+
+      // Update the container with the new photos array
+      await pb.collection('containers').update(container.id, {
+        photos: updatedPhotos,
+      })
+
+      // Refresh container to get updated photos
+      const updated = await pb.collection('containers').getOne<Container>(container.id)
+      Object.assign(container, updated)
+
+      // Adjust current photo index if needed
+      if (currentPhotoIndex >= updatedPhotos.length) {
+        currentPhotoIndex = Math.max(0, updatedPhotos.length - 1)
+      }
+
+      toast('Photo deleted successfully', { type: 'success' })
+    } catch (error) {
+      console.error('Error deleting photo:', error)
+      toast('Failed to delete photo', { type: 'error' })
+    }
+  }
+
   // Editing states
   let editingField = $state<'name' | 'location' | 'size' | 'plant' | null>(null)
   let editValue = $state('')
   let editingPlantId = $state<string | null>(null)
   let editingPlantQuantity = $state(1)
   let deletingPlantId = $state<string | null>(null)
+
+  // Delete photo dialog
+  const {
+    elements: {
+      trigger: deletePhotoTrigger,
+      content: deletePhotoContent,
+      overlay: deletePhotoOverlay,
+      title: deletePhotoTitle,
+      description: deletePhotoDescription,
+      close: deletePhotoClose,
+    },
+    states: { open: deletePhotoOpen },
+  } = createDialog({
+    role: 'dialog',
+    preventScroll: true,
+  })
 
   // Delete plant dialog
   const {
@@ -209,11 +302,17 @@
     if (!file) return
 
     try {
+      // Get current photos array
+      const currentPhotos = container.photos || []
+
       const formData = new FormData()
-      formData.append('photos', file)
+      formData.append('photos+', file) // Using the + operator to append to the array
 
       // Update the container with the new photo
       await pb.collection('containers').update(container.id, formData)
+
+      // Set the current photo index to show the newly added photo
+      currentPhotoIndex = currentPhotos.length
 
       // Refresh container to get updated photos
       const updated = await pb.collection('containers').getOne<Container>(container.id)
@@ -297,13 +396,64 @@
     <div class="bg-white dark:bg-stone-800 rounded-lg shadow-sm p-6 flex flex-col gap-4">
       <div class="flex flex-col md:flex-row gap-4 items-center md:items-start">
         <!-- Container Photo Section -->
-        <div class="w-full max-w-80 aspect-square shrink-0">
+        <div class="w-full max-w-80 aspect-square shrink-0 relative group">
           {#if container.photos && container.photos.length > 0}
-            <img
-              src={pb.files.getUrl(container, container.photos[0])}
-              alt={`${container.name} photo`}
-              class="w-full h-full object-cover rounded-lg"
-            />
+            <div class="w-full h-full" ontouchstart={handleTouchStart} ontouchend={handleTouchEnd}>
+              <img
+                src={pb.files.getURL(container, container.photos[currentPhotoIndex])}
+                alt={`${container.name} photo ${currentPhotoIndex + 1} of ${container.photos.length}`}
+                class="w-full h-full object-cover rounded-lg"
+              />
+
+              <!-- Navigation buttons -->
+              {#if container.photos.length > 1}
+                <div
+                  class="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <button
+                    class="p-1 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50"
+                    onclick={previousPhoto}
+                    disabled={currentPhotoIndex === 0}
+                    aria-label="Previous photo"
+                  >
+                    <ChevronLeft size={24} />
+                  </button>
+                  <button
+                    class="p-1 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50"
+                    onclick={nextPhoto}
+                    disabled={currentPhotoIndex === container.photos.length - 1}
+                    aria-label="Next photo"
+                  >
+                    <ChevronRight size={24} />
+                  </button>
+                </div>
+
+                <!-- Photo indicators -->
+                <div class="absolute bottom-2 inset-x-0 flex justify-center gap-1">
+                  {#each container.photos as _, i}
+                    <button
+                      class="w-2 h-2 rounded-full transition-colors {i === currentPhotoIndex
+                        ? 'bg-white'
+                        : 'bg-white/50 hover:bg-white/75'}"
+                      onclick={() => (currentPhotoIndex = i)}
+                      aria-label="Go to photo {i + 1}"
+                    ></button>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+            <!-- Photo info bar -->
+            <div class="mt-2 flex justify-between items-center text-sm">
+              <p class="text-stone-500 dark:text-stone-400">
+                Added {new Date(container.updated).toLocaleDateString()}
+              </p>
+              <button
+                use:melt={$deletePhotoTrigger}
+                class="text-stone-600 dark:text-stone-300 hover:text-red-700 dark:hover:text-red-400 flex items-center gap-1"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
           {:else}
             <div
               class="w-full h-full bg-stone-100 dark:bg-stone-700 rounded-lg flex items-center justify-center"
@@ -568,6 +718,47 @@
 </div>
 
 <!-- Delete Plant Dialog -->
+{#if $deletePhotoOpen}
+  <div
+    use:melt={$deletePhotoOverlay}
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[300]"
+    transition:fade={{ duration: 150 }}
+  ></div>
+
+  <div
+    use:melt={$deletePhotoContent}
+    class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[301]"
+    transition:scale={{ duration: 150, start: 0.95 }}
+  >
+    <div class="flex items-center gap-3 text-red-600">
+      <Trash2 size={24} />
+      <h2 use:melt={$deletePhotoTitle} class="text-lg font-semibold">Delete Photo</h2>
+    </div>
+
+    <p use:melt={$deletePhotoDescription} class="mt-4 text-stone-600 dark:text-stone-300">
+      Are you sure you want to delete this photo? This action cannot be undone.
+    </p>
+
+    <div class="flex justify-end gap-3 mt-6">
+      <button
+        use:melt={$deletePhotoClose}
+        class="px-4 py-2 text-sm border rounded-md hover:bg-stone-100 dark:hover:bg-stone-700"
+      >
+        Cancel
+      </button>
+      <button
+        class="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
+        onclick={() => {
+          deleteCurrentPhoto()
+          $deletePhotoOpen = false
+        }}
+      >
+        Delete Photo
+      </button>
+    </div>
+  </div>
+{/if}
+
 {#if $deletePlantOpen}
   <div
     use:melt={$deletePlantOverlay}
