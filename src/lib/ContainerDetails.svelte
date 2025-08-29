@@ -393,7 +393,7 @@
 >
   <!-- Header -->
   <div
-    class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-b border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12"
+    class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12"
   >
     <button
       onclick={onClose}
