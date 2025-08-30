@@ -1,18 +1,21 @@
 <script lang="ts">
   import { pb } from './pocketbase.svelte'
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import AddContainer from './AddContainer.svelte'
   import ContainerDetails from './ContainerDetails.svelte'
   import { Droplets } from 'lucide-svelte'
   import { toast } from './toast'
   import { getContainerPlants } from './utils/container'
   import type { Container } from './types'
+  import { getMostRecentPhoto, type Photo } from './utils/photos'
 
   let selectedContainer = $state<Container | null>(null)
 
   let containers = $state<Container[]>([])
   let loading = $state(true)
   let error = $state<string | null>(null)
+  let unsubscribe: (() => void) | null = $state(null)
+  let scrollContainer: HTMLElement | undefined = $state(undefined)
 
   async function fetchContainers() {
     try {
@@ -30,13 +33,98 @@
     }
   }
 
-  onMount(() => {
-    fetchContainers()
+  onMount(async () => {
+    await fetchContainers()
+    await setupSubscription()
   })
+
+  onDestroy(() => {
+    if (unsubscribe) {
+      unsubscribe()
+    }
+  })
+
+  async function setupSubscription() {
+    try {
+      // Subscribe to photos collection for thumbnail updates
+      const photosUnsubscribe = await pb
+        .collection('photos')
+        .subscribe('*', ({ record, action }) => {
+          // Handle different types of events
+          if (record.container) {
+            // New photo added to a container - update the container's photos
+            const container = containers.find((c) => c.id === record.container)
+
+            if (container && action === 'create') {
+              container.expand?.photos_via_container.push(record)
+            } else if (container?.expand?.photos_via_container && action === 'delete') {
+              container.expand.photos_via_container = container.expand.photos_via_container.filter(
+                (p: Photo) => p.id !== record.id
+              )
+            } else if (container?.expand?.photos_via_container && action === 'update') {
+              container.expand.photos_via_container = container.expand.photos_via_container.map(
+                (p: Photo) => (p.id === record.id ? record : p)
+              )
+            }
+          }
+        })
+
+      // Subscribe to containers collection for container updates (like watering time)
+      const containersUnsubscribe = await pb
+        .collection('containers')
+        .subscribe('*', ({ record, action }) => {
+          if (action === 'update') {
+            // Update the container in the list
+            const containerIndex = containers.findIndex((c) => c.id === record.id)
+            if (containerIndex !== -1) {
+              // Preserve the expanded photos data that are not fetched on subscribe
+              const existingExpand = containers[containerIndex].expand
+              containers[containerIndex] = {
+                ...containers[containerIndex],
+                ...record,
+                expand: existingExpand,
+              }
+            }
+          } else if (action === 'create') {
+            // Add the new container to the top of the list
+            containers = [record as Container, ...containers]
+          } else if (action === 'delete') {
+            containers = containers.filter((c) => c.id !== record.id)
+          }
+        })
+
+      // Combine both unsubscribe functions
+      unsubscribe = () => {
+        photosUnsubscribe()
+        containersUnsubscribe()
+      }
+    } catch (error) {
+      console.error('Error setting up container subscriptions:', error)
+    }
+  }
+
+  let thumbnails = $derived.by(getThumbnails)
+
+  function getThumbnails() {
+    const thumbnails: Record<string, Photo | null> = {}
+    // Go through each container and get its most recent photo
+    for (const container of containers) {
+      if (
+        container.expand?.photos_via_container &&
+        container.expand.photos_via_container.length > 0
+      ) {
+        const mostRecent = getMostRecentPhoto(container.expand.photos_via_container)
+        thumbnails[container.id] = mostRecent
+      } else {
+        thumbnails[container.id] = null
+      }
+    }
+    return thumbnails
+  }
 </script>
 
 <div class="h-full flex flex-col">
-  <div class="flex-1 overflow-auto p-4">
+  <div class="flex-1 overflow-auto p-4" bind:this={scrollContainer}>
     {#if loading}
       <p class="text-center">Loading containers...</p>
     {:else if error}
@@ -57,15 +145,11 @@
             <div class="flex gap-4 items-center">
               <!-- Thumbnail -->
               <div class="flex-shrink-0">
-                {#if container.expand?.photos_via_container && container.expand.photos_via_container.length > 0}
+                {#if thumbnails[container.id]}
                   <img
                     src={pb.files.getURL(
-                      container.expand.photos_via_container[
-                        container.expand.photos_via_container.length - 1
-                      ],
-                      container.expand.photos_via_container[
-                        container.expand.photos_via_container.length - 1
-                      ].file,
+                      thumbnails[container.id]!,
+                      thumbnails[container.id]!.file,
                       {
                         thumb: '100x100',
                       }
@@ -125,7 +209,6 @@
                         await pb.collection('containers').update(container.id, {
                           last_watered: new Date().toISOString(),
                         })
-                        fetchContainers()
                         toast('Plants watered successfully', { type: 'success' })
                       }}
                     >
@@ -144,7 +227,10 @@
   <div class="fixed md:absolute right-4 md:top-6 md:right-10 bottom-18">
     <AddContainer
       onContainerAdded={() => {
-        fetchContainers()
+        // Scroll to top of the container
+        if (scrollContainer) {
+          scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
+        }
       }}
     />
   </div>
