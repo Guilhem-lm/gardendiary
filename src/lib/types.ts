@@ -9,12 +9,13 @@ export interface Species extends RecordModel {
   }
 }
 
-export interface Plant {
+export interface Plant extends RecordModel {
   id: string
   species: string
   quantity: number
   expand?: {
     species: Species
+    containers_via_plants: Container
   }
 }
 

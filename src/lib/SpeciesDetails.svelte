@@ -2,7 +2,7 @@
 <script lang="ts">
   import { fade, fly, scale } from 'svelte/transition'
   import { ArrowLeft, Settings, EllipsisVertical, Trash2, X } from 'lucide-svelte'
-  import type { Species } from './types'
+  import type { Plant, Species } from './types'
   import { getCurrentUser, pb } from './pocketbase.svelte'
   import { toast } from './toast'
   import { createDialog, createDropdownMenu, melt } from '@melt-ui/svelte'
@@ -101,9 +101,11 @@
       formData.append('created_by', getCurrentUser()?.id || '')
 
       // Create new photo record
-      await pb.collection('photos').create(formData)
+      const photo = await pb.collection('photos').create(formData)
 
       toast('Photo added successfully', { type: 'success' })
+
+      photoCarousel?.navigateToPhoto(photo.id)
     } catch (error: any) {
       console.error('Error uploading photo:', error)
       toast('Failed to upload photo', { type: 'error' })
@@ -124,7 +126,7 @@
     }
   }
 
-  let plants = $state<any[]>([])
+  let plants: Plant[] = $state([])
   let loading = $state(true)
 
   async function fetchPlants() {
@@ -132,9 +134,9 @@
       loading = true
       const records = await pb.collection('plants').getFullList({
         filter: `species = "${species.id}"`,
-        expand: 'container',
+        expand: 'containers_via_plants',
       })
-      plants = records
+      plants = records as Plant[]
     } catch (error) {
       console.error('Error fetching plants:', error)
       toast('Failed to load plants', { type: 'error' })
@@ -146,6 +148,8 @@
   $effect(() => {
     fetchPlants()
   })
+
+  let photoCarousel: PhotoCarousel | undefined = $state(undefined)
 </script>
 
 <div
@@ -233,7 +237,7 @@
   <div class="max-w-4xl mx-auto p-4 flex flex-col gap-4">
     <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
       <!-- Photo Carousel -->
-      <PhotoCarousel speciesId={species.id} />
+      <PhotoCarousel speciesId={species.id} bind:this={photoCarousel} />
 
       <!-- Species Details -->
       <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm md:grow min-w-0 md:h-96">
@@ -253,24 +257,31 @@
       {#if loading}
         <p class="text-stone-500 dark:text-stone-400">Loading plants...</p>
       {:else if plants.length === 0}
-        <p class="text-stone-500 dark:text-stone-400">No plants of this species yet.</p>
+        <p class="text-stone-500 dark:text-stone-400">
+          No plants of this species in containers yet.
+        </p>
       {:else}
         <div class="grid gap-3">
           {#each plants as plant}
             <div class="bg-stone-50 dark:bg-stone-700 rounded-lg p-4">
-              <div class="flex items-baseline justify-between">
-                <div class="flex items-baseline gap-2">
-                  <p class="font-medium">
-                    In container: {plant.expand?.container?.name || 'Unknown container'}
-                  </p>
-                  <p class="text-sm text-stone-500 dark:text-stone-400">
-                    {plant.quantity || 1} plants
-                  </p>
+              {#if plant.expand?.containers_via_plants && plant.expand?.containers_via_plants.length > 0}
+                {@const container = plant.expand?.containers_via_plants[0]}
+                <div class="flex items-baseline justify-between">
+                  <div class="flex items-baseline gap-2">
+                    <p class="font-medium">
+                      In container: {container.name || 'Unknown container'}
+                    </p>
+                    <p class="text-sm text-stone-500 dark:text-stone-400">
+                      {plant.quantity || 1} plants
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">
-                Location: {plant.expand?.container?.location || '-'}
-              </p>
+                <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">
+                  Location: {container.location || '-'}
+                </p>
+              {:else}
+                <p class="font-medium">Not in a container</p>
+              {/if}
             </div>
           {/each}
         </div>

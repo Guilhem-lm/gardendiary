@@ -229,6 +229,11 @@
     // Reset the input
     input.value = ''
   }
+
+  export function navigateToPhoto(photoId: string) {
+    const index = photos.findIndex((photo) => photo.id === photoId)
+    currentPhotoIndex = index
+  }
 </script>
 
 <div class="w-full max-w-96 aspect-square shrink-0 relative group mx-auto md:mx-0">
