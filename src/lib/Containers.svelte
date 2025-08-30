@@ -56,7 +56,14 @@
             const container = containers.find((c) => c.id === record.container)
 
             if (container && action === 'create') {
-              container.expand?.photos_via_container.push(record)
+              if (container.expand?.photos_via_container) {
+                container.expand.photos_via_container.unshift(record)
+              } else {
+                container.expand = {
+                  ...container.expand,
+                  photos_via_container: [record],
+                } as Container['expand']
+              }
             } else if (container?.expand?.photos_via_container && action === 'delete') {
               container.expand.photos_via_container = container.expand.photos_via_container.filter(
                 (p: Photo) => p.id !== record.id
