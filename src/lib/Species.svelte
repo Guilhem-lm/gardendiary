@@ -1,17 +1,18 @@
 <!-- Species.svelte -->
 <script lang="ts">
   import { pb } from './pocketbase.svelte'
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import { toast } from './toast'
   import type { Species } from './types'
   import AddSpecies from './AddSpecies.svelte'
   import SpeciesDetails from './SpeciesDetails.svelte'
+  import type { Photo } from './utils/photos'
 
   let species = $state<Species[]>([])
   let loading = $state(true)
   let error = $state<string | null>(null)
-  let editingSpecies = $state<Species | null>(null)
   let selectedSpecies = $state<Species | null>(null)
+  let unsubscribe: (() => void) | null = $state(null)
 
   async function fetchSpecies() {
     try {
@@ -29,13 +30,102 @@
     }
   }
 
-  onMount(() => {
-    fetchSpecies()
+  onMount(async () => {
+    await fetchSpecies()
+    await setupSubscription()
   })
+
+  onDestroy(() => {
+    if (unsubscribe) {
+      unsubscribe()
+    }
+  })
+
+  async function setupSubscription() {
+    try {
+      // Subscribe to photos collection for thumbnail updates
+      const photosUnsubscribe = await pb
+        .collection('photos')
+        .subscribe('*', ({ record, action }) => {
+          // Handle different types of events
+          if (record.species) {
+            // New photo added to a species - update the species's photos
+            const speciesItem = species.find((s) => s.id === record.species)
+
+            if (speciesItem && action === 'create') {
+              if (speciesItem.expand?.photos_via_species) {
+                speciesItem.expand.photos_via_species.unshift(record)
+              } else {
+                speciesItem.expand = {
+                  photos_via_species: [record],
+                }
+              }
+            } else if (speciesItem?.expand?.photos_via_species && action === 'delete') {
+              speciesItem.expand.photos_via_species = speciesItem.expand.photos_via_species.filter(
+                (p: any) => p.id !== record.id
+              )
+            } else if (speciesItem?.expand?.photos_via_species && action === 'update') {
+              speciesItem.expand.photos_via_species = speciesItem.expand.photos_via_species.map(
+                (p: any) => (p.id === record.id ? record : p)
+              )
+            }
+          }
+        })
+
+      // Subscribe to species collection for species updates
+      const speciesUnsubscribe = await pb
+        .collection('species')
+        .subscribe('*', ({ record, action }) => {
+          if (action === 'update') {
+            // Update the species in the list
+            const speciesIndex = species.findIndex((s) => s.id === record.id)
+            if (speciesIndex !== -1) {
+              // Preserve the expanded photos data that are not fetched on subscribe
+              const existingExpand = species[speciesIndex].expand
+              species[speciesIndex] = {
+                ...species[speciesIndex],
+                ...record,
+                expand: existingExpand,
+              }
+            }
+          } else if (action === 'create') {
+            // Add the new species to the top of the list
+            species = [record as Species, ...species]
+          } else if (action === 'delete') {
+            species = species.filter((s) => s.id !== record.id)
+          }
+        })
+
+      // Combine both unsubscribe functions
+      unsubscribe = () => {
+        photosUnsubscribe()
+        speciesUnsubscribe()
+      }
+    } catch (error) {
+      console.error('Error setting up species subscriptions:', error)
+    }
+  }
+
+  let thumbnails = $derived.by(getThumbnails)
+
+  function getThumbnails() {
+    const thumbnails: Record<string, Photo | null> = {}
+    // Go through each species and get the latest photo (first element of the array)
+    for (const specie of species) {
+      if (specie.expand?.photos_via_species && specie.expand.photos_via_species.length > 0) {
+        thumbnails[specie.id] = specie.expand.photos_via_species[0]
+      } else {
+        thumbnails[specie.id] = null
+      }
+    }
+    return thumbnails
+  }
+
+  let scrollContainer: HTMLElement | undefined = $state(undefined)
 </script>
 
 <div class="h-full flex flex-col">
-  <div class="flex-1 overflow-auto p-4">
+  <div class="flex-1 overflow-auto p-4" bind:this={scrollContainer}>
     {#if loading}
       <p class="text-center">Loading species...</p>
     {:else if error}
@@ -56,13 +146,11 @@
             <div class="flex gap-4">
               <!-- Thumbnail -->
               <div class="flex-shrink-0">
-                {#if specie.expand?.photos_via_species && specie.expand.photos_via_species.length > 0}
+                {#if thumbnails[specie.id]}
                   <img
-                    src={pb.files.getURL(
-                      specie.expand.photos_via_species[0],
-                      specie.expand.photos_via_species[0].file,
-                      { thumb: '100x100' }
-                    )}
+                    src={pb.files.getURL(thumbnails[specie.id]!, thumbnails[specie.id]!.file, {
+                      thumb: '100x100',
+                    })}
                     alt={`${specie.name} thumbnail`}
                     class="w-16 h-16 object-cover rounded-lg"
                   />
@@ -92,16 +180,12 @@
   </div>
 
   <!-- Add button - floating on mobile, fixed on desktop -->
-  <div
-    class="fixed md:absolute right-4 {editingSpecies
-      ? 'hidden'
-      : ''} md:top-6 md:right-10 bottom-18 h-fit"
-  >
+  <div class="fixed md:absolute right-4 md:top-6 md:right-10 bottom-18 h-fit">
     <AddSpecies
-      species={editingSpecies}
       onSpeciesAdded={() => {
-        fetchSpecies()
-        editingSpecies = null
+        if (scrollContainer) {
+          scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
+        }
       }}
     />
   </div>

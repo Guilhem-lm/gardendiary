@@ -9,12 +9,11 @@
 
   interface Props {
     onSpeciesAdded: () => void
-    species?: Species | null
   }
 
-  const { species, onSpeciesAdded }: Props = $props()
+  const { onSpeciesAdded }: Props = $props()
 
-  let name = $state(species?.name || '')
+  let name = $state('')
   let loading = $state(false)
 
   const {
@@ -43,20 +42,12 @@
         return
       }
 
-      if (species?.id) {
-        // Update existing species
-        await pb.collection('species').update(species.id, {
-          name: name.trim(),
-        })
-        toast('Species updated successfully', { type: 'success' })
-      } else {
-        // Create new species
-        await pb.collection('species').create({
-          name: name.trim(),
-          created_by: pb.authStore.record?.id,
-        })
-        toast('Species added successfully', { type: 'success' })
-      }
+      // Create new species
+      await pb.collection('species').create({
+        name: name.trim(),
+        created_by: pb.authStore.record?.id,
+      })
+      toast('Species added successfully', { type: 'success' })
 
       // Reset form and close dialog
       name = ''
@@ -94,9 +85,7 @@
     class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[51]"
     transition:scale={{ duration: 150, start: 0.95 }}
   >
-    <h2 use:melt={$title} class="text-lg font-semibold mb-4">
-      {species ? 'Edit' : 'Add'} Species
-    </h2>
+    <h2 use:melt={$title} class="text-lg font-semibold mb-4">Add Species</h2>
 
     <form
       onsubmit={(e) => {
@@ -129,7 +118,7 @@
           disabled={loading}
           class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {loading ? 'Saving...' : species ? 'Update' : 'Add'} Species
+          {loading ? 'Saving...' : 'Add'} Species
         </button>
       </div>
     </form>
