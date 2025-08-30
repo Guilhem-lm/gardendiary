@@ -125,7 +125,7 @@
 </script>
 
 <div class="h-full flex flex-col">
-  <div class="flex-1 overflow-auto p-4" bind:this={scrollContainer}>
+  <div class="flex-1 p-4" bind:this={scrollContainer}>
     {#if loading}
       <p class="text-center">Loading species...</p>
     {:else if error}

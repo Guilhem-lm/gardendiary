@@ -3,7 +3,7 @@
   import Toast from './lib/Toast.svelte'
 </script>
 
-<main class="min-h-screen w-full">
+<main class="bg-stone-50 dark:bg-stone-800">
   <Login />
   <Toast />
 </main>

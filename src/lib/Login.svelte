@@ -41,19 +41,17 @@
 </style>
 
 {#if currentUser}
-  <div class="flex min-h-screen h-screen bg-stone-50 dark:bg-stone-800">
-    <Navigation bind:currentView />
-
+  <div class="flex flex-col h-full md:flex-row">
     <!-- Main content -->
-    <main class="flex-1 h-full overflow-hidden">
-      <div class="h-full">
-        {#if currentView === 'containers'}
-          <Container />
-        {:else if currentView === 'species'}
-          <Species />
-        {/if}
-      </div>
-    </main>
+    <Navigation bind:currentView />
+    <div class="grow min-h-0 overflow-auto min-w-0">
+      {#if currentView === 'containers'}
+        <Container />
+      {:else if currentView === 'species'}
+        <Species />
+      {/if}
+    </div>
+    <Navigation bind:currentView mobile />
   </div>
 {:else}
   <div class="flex flex-col min-h-screen justify-center items-center">

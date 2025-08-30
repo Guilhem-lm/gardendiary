@@ -130,8 +130,8 @@
   }
 </script>
 
-<div class="h-full flex flex-col">
-  <div class="flex-1 overflow-auto p-4" bind:this={scrollContainer}>
+<div class="flex flex-col">
+  <div class="flex-1 p-4" bind:this={scrollContainer}>
     {#if loading}
       <p class="text-center">Loading containers...</p>
     {:else if error}
@@ -231,7 +231,7 @@
     {/if}
   </div>
   <!-- Add button - floating on mobile, fixed on desktop -->
-  <div class="fixed md:absolute right-4 md:top-6 md:right-10 bottom-18">
+  <div class="fixed right-4 md:top-6 md:right-10 bottom-18 h-fit">
     <AddContainer
       onContainerAdded={() => {
         // Scroll to top of the container
