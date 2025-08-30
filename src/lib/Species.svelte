@@ -19,6 +19,7 @@
       error = null
       species = await pb.collection('species').getFullList<Species>({
         sort: '-created',
+        expand: 'photos_via_species',
       })
     } catch (err) {
       error = 'Failed to load species'
@@ -55,9 +56,13 @@
             <div class="flex gap-4">
               <!-- Thumbnail -->
               <div class="flex-shrink-0">
-                {#if specie.photos && specie.photos.length > 0}
+                {#if specie.expand?.photos_via_species && specie.expand.photos_via_species.length > 0}
                   <img
-                    src={pb.files.getURL(specie, specie.photos[0], { thumb: '100x100' })}
+                    src={pb.files.getURL(
+                      specie.expand.photos_via_species[0],
+                      specie.expand.photos_via_species[0].file,
+                      { thumb: '100x100' }
+                    )}
                     alt={`${specie.name} thumbnail`}
                     class="w-16 h-16 object-cover rounded-lg"
                   />

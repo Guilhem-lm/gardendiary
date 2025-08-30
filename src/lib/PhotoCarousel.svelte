@@ -5,56 +5,108 @@
   import { createDialog, melt } from '@melt-ui/svelte'
   import { pb } from './pocketbase.svelte'
   import { toast } from './toast'
+  import { onMount } from 'svelte'
 
   interface Props {
-    record: any
-    collectionName: string
+    containerId?: string
+    speciesId?: string
     onDelete?: () => void
     onUpload?: (event: Event) => Promise<void>
   }
 
-  const { record, collectionName, onDelete, onUpload }: Props = $props()
+  const { containerId, speciesId, onDelete, onUpload }: Props = $props()
 
   // Photo carousel state
-  let currentPhotoIndex = $state(record.photos ? record.photos.length - 1 : 0)
+  let photos = $state<any[]>([])
+  let loading = $state(true)
+  let currentPhotoIndex = $state(0)
+  let touchStartX = $state(0)
+  let touchStartY = $state(0)
+  let isDragging = $state(false)
+
+  // Fetch photos based on container or species ID
+  export async function fetchPhotos() {
+    try {
+      loading = true
+      let filter = ''
+
+      if (containerId) {
+        filter = `container = "${containerId}"`
+      } else if (speciesId) {
+        filter = `species = "${speciesId}"`
+      } else {
+        photos = []
+        return
+      }
+
+      const records = await pb.collection('photos').getFullList({
+        filter,
+        sort: '-taken_at',
+      })
+
+      photos = records
+
+      // Set current index to the newest photo (index 0 since we sort by -taken_at)
+      currentPhotoIndex = photos.length > 0 ? 0 : 0
+    } catch (error) {
+      console.error('Error fetching photos:', error)
+      toast('Failed to load photos', { type: 'error' })
+    } finally {
+      loading = false
+    }
+  }
+
+  onMount(() => {
+    fetchPhotos()
+  })
 
   function nextPhoto() {
-    if (record.photos && currentPhotoIndex > 0) {
-      currentPhotoIndex--
+    if (photos.length > 0 && currentPhotoIndex < photos.length - 1) {
+      currentPhotoIndex++
     }
   }
 
   function previousPhoto() {
-    if (record.photos && currentPhotoIndex < record.photos.length - 1) {
-      currentPhotoIndex++
+    if (photos.length > 0 && currentPhotoIndex > 0) {
+      currentPhotoIndex--
     }
   }
 
   function handleTouchStart(event: TouchEvent) {
     const touch = event.touches[0]
     touchStartX = touch.clientX
+    touchStartY = touch.clientY
+    isDragging = false
+  }
+
+  function handleTouchMove(event: TouchEvent) {
+    if (event.touches.length === 1) {
+      const touch = event.touches[0]
+      const deltaX = Math.abs(touch.clientX - touchStartX)
+      const deltaY = Math.abs(touch.clientY - touchStartY)
+
+      if (deltaX > 10 && deltaX > deltaY) {
+        isDragging = true
+        event.preventDefault()
+      }
+    }
   }
 
   function handleTouchEnd(event: TouchEvent) {
+    if (!isDragging) return
+
     const touch = event.changedTouches[0]
     const deltaX = touch.clientX - touchStartX
+    const deltaY = Math.abs(touch.clientY - touchStartY)
 
-    if (Math.abs(deltaX) > 50) {
-      // minimum swipe distance
+    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > deltaY) {
       if (deltaX > 0) {
         previousPhoto()
       } else {
         nextPhoto()
       }
     }
-  }
-
-  let touchStartX = 0
-
-  export function goToLastPhoto() {
-    if (record.photos && record.photos.length > 0) {
-      currentPhotoIndex = record.photos.length - 1
-    }
+    isDragging = false
   }
 
   // Full screen photo dialog
@@ -88,29 +140,16 @@
   })
 
   async function deleteCurrentPhoto() {
-    if (!record.photos || !record.photos.length) return
+    if (!photos.length || currentPhotoIndex >= photos.length) return
 
     try {
-      // Create new arrays without the current photo and its metadata
-      const updatedPhotos = record.photos.filter(
-        (_: string, index: number) => index !== currentPhotoIndex
-      )
-      const updatedPhotosTakenAt = (record.photos_taken_at || []).filter(
-        (_: any, index: number) => index !== currentPhotoIndex
-      )
+      const photoToDelete = photos[currentPhotoIndex]
 
-      // Update the record with the new photos array and metadata
-      await pb.collection(collectionName).update(record.id, {
-        photos: updatedPhotos,
-        photos_taken_at: updatedPhotosTakenAt,
-      })
+      // Delete the photo record
+      await pb.collection('photos').delete(photoToDelete.id)
 
-      // Adjust current photo index if needed
-      if (updatedPhotos.length > 0 && currentPhotoIndex >= updatedPhotos.length) {
-        currentPhotoIndex = Math.max(0, updatedPhotos.length - 1)
-      } else {
-        $fullscreenPhotoOpen = false
-      }
+      // Refresh photos
+      await fetchPhotos()
 
       // Call onDelete callback if provided
       if (onDelete) {
@@ -126,35 +165,47 @@
 </script>
 
 <div class="w-full max-w-96 aspect-square shrink-0 relative group mx-auto md:mx-0">
-  {#if record.photos && record.photos.length > 0}
-    <div class="w-full h-full" ontouchstart={handleTouchStart} ontouchend={handleTouchEnd}>
+  {#if loading}
+    <div
+      class="w-full h-full bg-stone-100 dark:bg-stone-700 rounded-lg flex items-center justify-center"
+    >
+      <p class="text-stone-500 dark:text-stone-400">Loading photos...</p>
+    </div>
+  {:else if photos.length > 0}
+    <div
+      class="w-full h-full touch-pan-y"
+      ontouchstart={handleTouchStart}
+      ontouchmove={handleTouchMove}
+      ontouchend={handleTouchEnd}
+    >
       <div class="absolute inset-0 cursor-zoom-in z-10" use:melt={$fullscreenPhotoTrigger}></div>
       <img
-        src={pb.files.getURL(record, record.photos[currentPhotoIndex])}
-        alt={`Photo ${record.photos.length - currentPhotoIndex} of ${record.photos.length}`}
-        class="w-full h-full object-cover rounded-lg"
+        src={pb.files.getURL(photos[currentPhotoIndex], photos[currentPhotoIndex].file)}
+        alt={`Photo ${currentPhotoIndex + 1} of ${photos.length}`}
+        class="w-full h-full object-cover rounded-lg select-none"
+        draggable="false"
       />
 
       <!-- Navigation buttons -->
-      {#if record.photos.length > 1}
+      {#if photos.length > 1}
         <button
-          class="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+          class="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-20 touch-manipulation"
           onclick={(e) => {
             e.stopPropagation()
             previousPhoto()
           }}
-          disabled={currentPhotoIndex === record.photos.length - 1}
+          disabled={currentPhotoIndex === 0}
           aria-label="Previous photo"
         >
           <ChevronLeft size={24} />
         </button>
         <button
-          class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-20"
+          class="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity z-20 touch-manipulation"
           onclick={(e) => {
             e.stopPropagation()
             nextPhoto()
           }}
-          disabled={currentPhotoIndex === 0}
+          disabled={currentPhotoIndex === photos.length - 1}
           aria-label="Next photo"
         >
           <ChevronRight size={24} />
@@ -162,13 +213,13 @@
 
         <!-- Photo indicators -->
         <div class="absolute bottom-2 inset-x-0 flex justify-center gap-1 z-20">
-          {#each record.photos as _, i}
-            {@const reversedIndex = record.photos.length - i - 1}
+          {#each photos as _, i}
             <button
-              class="w-2 h-2 rounded-full transition-colors {reversedIndex === currentPhotoIndex
+              class="w-2 h-2 rounded-full transition-colors touch-manipulation {i ===
+              currentPhotoIndex
                 ? 'bg-white'
                 : 'bg-white/50 hover:bg-white/75'}"
-              onclick={() => (currentPhotoIndex = reversedIndex)}
+              onclick={() => (currentPhotoIndex = i)}
               aria-label="Go to photo {i + 1}"
             ></button>
           {/each}
@@ -217,21 +268,21 @@
       <div
         class="absolute bottom-2 right-2 flex items-center gap-4 text-stone-600 dark:text-stone-200 dark:bg-stone-700/50 bg-stone-50/50 rounded-lg p-2"
       >
-        {#if record.photos_taken_at?.[currentPhotoIndex]}
+        {#if photos[currentPhotoIndex]?.taken_at}
           <p class="text-lg">
-            {new Date(record.photos_taken_at[currentPhotoIndex]).toLocaleDateString()}
+            {new Date(photos[currentPhotoIndex].taken_at).toLocaleDateString()}
           </p>
         {/if}
         <button
           use:melt={$deletePhotoTrigger}
-          class="0 hover:text-red-700 dark:hover:text-red-400 flex items-center gap-1"
+          class="text-stone-600 dark:text-stone-200 hover:text-red-700 dark:hover:text-red-400 flex items-center gap-1"
         >
           <Trash2 size={24} />
         </button>
       </div>
 
       <!-- Navigation buttons -->
-      {#if record.photos && record.photos.length > 1}
+      {#if photos.length > 1}
         <div class="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between">
           <button
             class="p-2 rounded-full bg-black/50 text-white hover:bg-black/70 disabled:opacity-30 disabled:hover:bg-black/50"
@@ -239,7 +290,7 @@
               e.stopPropagation()
               previousPhoto()
             }}
-            disabled={currentPhotoIndex === record.photos.length - 1}
+            disabled={currentPhotoIndex === 0}
             aria-label="Previous photo"
           >
             <ChevronLeft size={32} />
@@ -250,7 +301,7 @@
               e.stopPropagation()
               nextPhoto()
             }}
-            disabled={currentPhotoIndex === 0}
+            disabled={currentPhotoIndex === photos.length - 1}
             aria-label="Next photo"
           >
             <ChevronRight size={32} />
@@ -260,21 +311,20 @@
 
       <!-- Full screen image -->
       <img
-        src={pb.files.getURL(record, record.photos[currentPhotoIndex])}
-        alt={`Photo ${record.photos.length - currentPhotoIndex} of ${record.photos.length}`}
+        src={pb.files.getURL(photos[currentPhotoIndex], photos[currentPhotoIndex].file)}
+        alt={`Photo ${currentPhotoIndex + 1} of ${photos.length}`}
         class="max-h-full max-w-full object-contain"
       />
 
       <!-- Photo indicators -->
-      {#if record.photos && record.photos.length > 1}
+      {#if photos.length > 1}
         <div class="absolute bottom-4 inset-x-0 flex justify-center gap-1">
-          {#each record.photos as _, i}
-            {@const reversedIndex = record.photos.length - i - 1}
+          {#each photos as _, i}
             <button
-              class="w-2 h-2 rounded-full transition-colors {reversedIndex === currentPhotoIndex
+              class="w-2 h-2 rounded-full transition-colors {i === currentPhotoIndex
                 ? 'bg-white'
                 : 'bg-white/50 hover:bg-white/75'}"
-              onclick={() => (currentPhotoIndex = reversedIndex)}
+              onclick={() => (currentPhotoIndex = i)}
               aria-label="Go to photo {i + 1}"
             ></button>
           {/each}

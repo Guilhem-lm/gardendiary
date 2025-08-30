@@ -3,7 +3,7 @@
   import { fade, fly, scale } from 'svelte/transition'
   import { ArrowLeft, Settings, EllipsisVertical, Trash2, X } from 'lucide-svelte'
   import type { Species } from './types'
-  import { pb } from './pocketbase.svelte'
+  import { getCurrentUser, pb } from './pocketbase.svelte'
   import { toast } from './toast'
   import { createDialog, createDropdownMenu, melt } from '@melt-ui/svelte'
   import PhotoCarousel from './PhotoCarousel.svelte'
@@ -95,22 +95,18 @@
 
     try {
       const formData = new FormData()
+      formData.append('file', file)
+      formData.append('species', species.id)
+      formData.append('taken_at', new Date(file.lastModified).toISOString())
+      formData.append('created_by', getCurrentUser()?.id || '')
 
-      // Add the new photo
-      formData.append('photos+', file)
-
-      // Update the species
-      await pb.collection('species').update(species.id, formData)
-
-      // Refresh species to get updated photos
-      const updated = await pb.collection('species').getOne<Species>(species.id)
-      Object.assign(species, updated)
-
-      // Refresh photo carousel to show the new photo
-      photoCarousel?.goToLastPhoto()
+      // Create new photo record
+      await pb.collection('photos').create(formData)
 
       toast('Photo added successfully', { type: 'success' })
-    } catch (error) {
+
+      photoCarousel?.fetchPhotos()
+    } catch (error: any) {
       console.error('Error uploading photo:', error)
       toast('Failed to upload photo', { type: 'error' })
     }
@@ -176,21 +172,19 @@
     </div>
 
     <div class="flex gap-2 items-center">
-      {#if species.photos && species.photos.length > 0}
-        <label
-          for="photo-upload"
-          class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
-        >
-          Add Photo
-        </label>
-        <input
-          type="file"
-          id="photo-upload"
-          accept="image/*"
-          class="hidden"
-          onchange={handlePhotoUpload}
-        />
-      {/if}
+      <label
+        for="photo-upload"
+        class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
+      >
+        Add Photo
+      </label>
+      <input
+        type="file"
+        id="photo-upload"
+        accept="image/*"
+        class="hidden"
+        onchange={handlePhotoUpload}
+      />
 
       <button
         use:melt={$speciesActionsTrigger}
@@ -244,8 +238,7 @@
     <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
       <!-- Photo Carousel -->
       <PhotoCarousel
-        record={species}
-        collectionName="species"
+        speciesId={species.id}
         onDelete={async () => {
           const updated = await pb.collection('species').getOne<Species>(species.id)
           Object.assign(species, updated)

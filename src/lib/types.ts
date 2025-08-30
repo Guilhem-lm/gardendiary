@@ -4,6 +4,9 @@ export interface Species extends RecordModel {
   id: string
   name: string
   description?: string
+  expand?: {
+    photos_via_species: any
+  }
 }
 
 export interface Plant {
@@ -24,5 +27,6 @@ export interface Container extends RecordModel {
   expand?: {
     plants: Plant[]
     user: any
+    photos_via_container: any
   }
 }

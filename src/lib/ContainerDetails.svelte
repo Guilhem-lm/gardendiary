@@ -3,7 +3,7 @@
   import { fade, fly, scale } from 'svelte/transition'
   import { ArrowLeft, Droplets, Settings, X, Plus, EllipsisVertical, Trash2 } from 'lucide-svelte'
   import type { Container, Species } from './types'
-  import { pb } from './pocketbase.svelte'
+  import { getCurrentUser, pb } from './pocketbase.svelte'
   import { toast } from './toast'
   import { createDialog, createDropdownMenu, melt } from '@melt-ui/svelte'
   import PhotoCarousel from './PhotoCarousel.svelte'
@@ -103,8 +103,6 @@
     }
   }
 
-  let editingPlantId = $state<string | null>(null)
-  let editingPlantQuantity = $state(1)
   let deletingPlantId = $state<string | null>(null)
 
   // Delete plant dialog
@@ -250,28 +248,18 @@
 
     try {
       const formData = new FormData()
+      formData.append('file', file)
+      formData.append('container', container.id)
+      formData.append('taken_at', new Date(file.lastModified).toISOString())
+      formData.append('created_by', getCurrentUser()?.id || '')
 
-      // Add the new photo
-      formData.append('photos+', file)
-      formData.append(
-        'photos_taken_at',
-        JSON.stringify([
-          ...(container.photos_taken_at || []),
-          new Date(file.lastModified).toISOString(),
-        ])
-      )
-
-      // Update the container
-      await pb.collection('containers').update(container.id, formData)
-
-      // Refresh container to get updated photos
-      const updated = await pb.collection('containers').getOne<Container>(container.id)
-      Object.assign(container, updated)
+      // Create new photo record
+      await pb.collection('photos').create(formData)
 
       toast('Photo added successfully', { type: 'success' })
 
-      photoCarousel?.goToLastPhoto()
-    } catch (error) {
+      photoCarousel?.fetchPhotos()
+    } catch (error: any) {
       console.error('Error uploading photo:', error)
       toast('Failed to upload photo', { type: 'error' })
     }
@@ -303,21 +291,19 @@
     </div>
 
     <div class="flex gap-2">
-      {#if container.photos && container.photos.length > 0}
-        <label
-          for="photo-upload"
-          class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
-        >
-          Add Photo
-        </label>
-        <input
-          type="file"
-          id="photo-upload"
-          accept="image/*"
-          class="hidden"
-          onchange={handlePhotoUpload}
-        />
-      {/if}
+      <label
+        for="photo-upload"
+        class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
+      >
+        Add Photo
+      </label>
+      <input
+        type="file"
+        id="photo-upload"
+        accept="image/*"
+        class="hidden"
+        onchange={handlePhotoUpload}
+      />
 
       <button
         use:melt={$containerActionsTrigger}
@@ -372,10 +358,11 @@
       <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
         <!-- Container Photo Section -->
         <PhotoCarousel
-          record={container}
-          collectionName="containers"
+          containerId={container.id}
           onDelete={async () => {
-            const updated = await pb.collection('containers').getOne<Container>(container.id)
+            const updated = await pb.collection('containers').getOne<Container>(container.id, {
+              expand: 'plants.species, user, photos_via_container',
+            })
             Object.assign(container, updated)
           }}
           onUpload={handlePhotoUpload}

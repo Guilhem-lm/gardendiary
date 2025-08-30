@@ -20,7 +20,7 @@
       error = null
       const records = await pb.collection('containers').getFullList<Container>({
         sort: '-created',
-        expand: 'plants.species, user',
+        expand: 'plants.species, user, photos_via_container',
       })
       containers = records
     } catch (e: any) {
@@ -57,11 +57,19 @@
             <div class="flex gap-4 items-center">
               <!-- Thumbnail -->
               <div class="flex-shrink-0">
-                {#if container.photos && container.photos.length > 0}
+                {#if container.expand?.photos_via_container && container.expand.photos_via_container.length > 0}
                   <img
-                    src={pb.files.getURL(container, container.photos[container.photos.length - 1], {
-                      thumb: '100x100',
-                    })}
+                    src={pb.files.getURL(
+                      container.expand.photos_via_container[
+                        container.expand.photos_via_container.length - 1
+                      ],
+                      container.expand.photos_via_container[
+                        container.expand.photos_via_container.length - 1
+                      ].file,
+                      {
+                        thumb: '100x100',
+                      }
+                    )}
                     alt={`${container.name} thumbnail`}
                     class="w-16 h-16 object-cover rounded-lg"
                   />
