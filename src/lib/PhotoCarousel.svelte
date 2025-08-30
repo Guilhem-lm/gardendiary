@@ -3,18 +3,16 @@
   import { fade, scale } from 'svelte/transition'
   import { ChevronLeft, ChevronRight, X, Trash2 } from 'lucide-svelte'
   import { createDialog, melt } from '@melt-ui/svelte'
-  import { pb } from './pocketbase.svelte'
+  import { getCurrentUser, pb } from './pocketbase.svelte'
   import { toast } from './toast'
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
 
   interface Props {
     containerId?: string
     speciesId?: string
-    onDelete?: () => void
-    onUpload?: (event: Event) => Promise<void>
   }
 
-  const { containerId, speciesId, onDelete, onUpload }: Props = $props()
+  const { containerId, speciesId }: Props = $props()
 
   // Photo carousel state
   let photos = $state<any[]>([])
@@ -23,6 +21,7 @@
   let touchStartX = $state(0)
   let touchStartY = $state(0)
   let isDragging = $state(false)
+  let unsubscribe: (() => void) | null = $state(null)
 
   // Fetch photos based on container or species ID
   export async function fetchPhotos() {
@@ -56,9 +55,55 @@
     }
   }
 
-  onMount(() => {
-    fetchPhotos()
+  onMount(async () => {
+    await fetchPhotos()
+    await setupSubscription()
   })
+
+  onDestroy(() => {
+    if (unsubscribe) {
+      unsubscribe()
+    }
+  })
+
+  async function setupSubscription() {
+    if (!containerId && !speciesId) return
+
+    try {
+      unsubscribe = await pb.collection('photos').subscribe('*', ({ record, action }) => {
+        // Handle different types of events
+        if (
+          action === 'create' &&
+          (record.container === containerId || record.species === speciesId)
+        ) {
+          // New photo added - refresh the list
+          // Find the right position based on taken_at
+          const index = photos.findIndex(
+            (photo) => new Date(photo.taken_at) < new Date(record.taken_at)
+          )
+          if (index === -1) {
+            photos.push(record) // Add to end if it's the oldest
+          } else {
+            photos.splice(index, 0, record) // Insert at correct position
+            if (index <= currentPhotoIndex) {
+              currentPhotoIndex++ // Increment index if photo was inserted before current view
+            }
+          }
+        } else if (action === 'delete') {
+          // Photo deleted - refresh the list
+          photos = photos.filter((photo) => photo.id !== record.id)
+        } else if (action === 'update') {
+          // Photo updated - refresh the list
+          const index = photos.findIndex((photo) => photo.id === record.id)
+          if (index !== -1) {
+            photos[index] = record
+          }
+        }
+      })
+    } catch (error) {
+      console.error('Error setting up photo subscription:', error)
+    }
+  }
 
   function nextPhoto() {
     if (photos.length > 0 && currentPhotoIndex < photos.length - 1) {
@@ -148,19 +193,41 @@
       // Delete the photo record
       await pb.collection('photos').delete(photoToDelete.id)
 
-      // Refresh photos
-      await fetchPhotos()
-
-      // Call onDelete callback if provided
-      if (onDelete) {
-        onDelete()
-      }
-
       toast('Photo deleted successfully', { type: 'success' })
     } catch (error) {
       console.error('Error deleting photo:', error)
       toast('Failed to delete photo', { type: 'error' })
     }
+  }
+
+  async function uploadPhoto(event: Event) {
+    const input = event.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      if (containerId) {
+        formData.append('container', containerId)
+      }
+      if (speciesId) {
+        formData.append('species', speciesId)
+      }
+      formData.append('taken_at', new Date(file.lastModified).toISOString())
+      formData.append('created_by', getCurrentUser()?.id || '')
+
+      // Create new photo record
+      await pb.collection('photos').create(formData)
+
+      toast('Photo added successfully', { type: 'success' })
+    } catch (error: any) {
+      console.error('Error uploading photo:', error)
+      toast('Failed to upload photo', { type: 'error' })
+    }
+
+    // Reset the input
+    input.value = ''
   }
 </script>
 
@@ -231,20 +298,19 @@
       class="w-full h-full bg-stone-100 dark:bg-stone-700 rounded-lg flex flex-col items-center justify-center gap-4"
     >
       <p class="text-stone-500 dark:text-stone-400 px-4">No photo added yet</p>
-      {#if onUpload}
-        <label
-          for="photo-upload"
-          class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
-        >
-          Add Photo
-        </label>
-        <input type="file" id="photo-upload" accept="image/*" class="hidden" onchange={onUpload} />
-      {/if}
+
+      <label
+        for="photo-upload"
+        class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
+      >
+        Add Photo
+      </label>
+      <input type="file" id="photo-upload" accept="image/*" class="hidden" onchange={uploadPhoto} />
     </div>
   {/if}
 </div>
 
-{#if $fullscreenPhotoOpen}
+{#if $fullscreenPhotoOpen && photos.length > 0}
   <div
     use:melt={$fullscreenPhotoOverlay}
     class="fixed inset-0 bg-black/90 backdrop-blur-sm z-[400]"

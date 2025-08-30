@@ -104,8 +104,6 @@
       await pb.collection('photos').create(formData)
 
       toast('Photo added successfully', { type: 'success' })
-
-      photoCarousel?.fetchPhotos()
     } catch (error: any) {
       console.error('Error uploading photo:', error)
       toast('Failed to upload photo', { type: 'error' })
@@ -148,8 +146,6 @@
   $effect(() => {
     fetchPlants()
   })
-
-  let photoCarousel: PhotoCarousel | undefined = $state(undefined)
 </script>
 
 <div
@@ -237,15 +233,7 @@
   <div class="max-w-4xl mx-auto p-4 flex flex-col gap-4">
     <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
       <!-- Photo Carousel -->
-      <PhotoCarousel
-        speciesId={species.id}
-        onDelete={async () => {
-          const updated = await pb.collection('species').getOne<Species>(species.id)
-          Object.assign(species, updated)
-        }}
-        onUpload={handlePhotoUpload}
-        bind:this={photoCarousel}
-      />
+      <PhotoCarousel speciesId={species.id} />
 
       <!-- Species Details -->
       <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm md:grow min-w-0 md:h-96">
