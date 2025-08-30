@@ -272,12 +272,12 @@
 </script>
 
 <div
-  class="fixed inset-0 bg-stone-100 dark:bg-stone-800 z-[200] overflow-auto"
+  class="fixed inset-0 bg-stone-100 dark:bg-stone-800 z-[200] overflow-y-auto h-screen"
   transition:fly={{ x: '-100%', duration: 150 }}
 >
   <!-- Header -->
   <div
-    class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12"
+    class="bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12"
   >
     <button
       onclick={onClose}
@@ -353,7 +353,7 @@
   </div>
 
   <!-- Content -->
-  <div class="max-w-4xl mx-auto">
+  <div class="max-w-4xl mx-auto pb-4">
     <div class="p-4 flex flex-col gap-4">
       <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
         <!-- Container Photo Section -->
