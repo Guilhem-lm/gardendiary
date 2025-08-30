@@ -29,11 +29,6 @@
     }
   }
 
-  function logout() {
-    pb.authStore.clear()
-    toast('Logged out successfully', { type: 'info' })
-  }
-
   let currentUser = $derived.by(getCurrentUser)
 </script>
 
