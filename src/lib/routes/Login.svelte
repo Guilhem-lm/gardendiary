@@ -1,11 +1,10 @@
 <script lang="ts">
   import { Sprout } from 'lucide-svelte'
-  import { pb, getCurrentUser } from './pocketbase.svelte'
-  import Container from './Containers.svelte'
-  import Species from './Species.svelte'
-  import Navigation from './Navigation.svelte'
-  import { toast } from './toast'
-  import SpeciesDetailDrawer from './SpeciesDetailDrawer.svelte'
+  import { pb, getCurrentUser } from '../pocketbase.svelte'
+  import Container from '../Containers.svelte'
+  import SpeciesComponent from '../Species.svelte'
+  import Navigation from '../Navigation.svelte'
+  import { toast } from '../toast'
 
   let currentView = $state<'containers' | 'species'>('containers')
 
@@ -31,9 +30,6 @@
   }
 
   let currentUser = $derived.by(getCurrentUser)
-  let speciesDetailDrawer: SpeciesDetailDrawer | null = $state(null)
-
-  //TODO: implement navigation to species detail drawer
 </script>
 
 <style>
@@ -52,12 +48,11 @@
       {#if currentView === 'containers'}
         <Container />
       {:else if currentView === 'species'}
-        <Species />
+        <SpeciesComponent />
       {/if}
     </div>
     <Navigation bind:currentView mobile />
   </div>
-  <SpeciesDetailDrawer bind:this={speciesDetailDrawer} />
 {:else}
   <div class="flex flex-col min-h-screen justify-center items-center">
     <div class="logo">

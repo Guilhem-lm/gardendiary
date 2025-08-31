@@ -26,9 +26,52 @@
       return next
     },
   })
+
+  let isPage = $state(false)
+
+  export function openDrawer() {
+    $open = true
+  }
+
+  export function closeDrawer() {
+    $open = false
+  }
+
+  export function openPage() {
+    isPage = true
+  }
 </script>
 
-{#if $open}
+{#if isPage}
+  <div>
+    <!-- Header -->
+    <div
+      class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12 py-2 z-10"
+    >
+      <button
+        class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 px-2"
+        onclick={() => {
+          history.back()
+        }}
+      >
+        <ArrowLeft size={24} />
+      </button>
+
+      <div class="flex gap-2 items-center whitespace-nowrap shrink min-w-0">
+        <h1 class="text-2xl font-semibold truncate">{title}</h1>
+      </div>
+
+      <div class="flex gap-2 items-center">
+        {@render actions()}
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="max-w-4xl mx-auto p-4 flex flex-col gap-4">
+      {@render content()}
+    </div>
+  </div>
+{:else if $open}
   <div use:melt={$portalled}>
     <div use:melt={$overlay} class="hidden inset-0 bg-black/50 backdrop-blur-sm z-50"></div>
     <div use:melt={$drawerContent} class="z-50">

@@ -5,14 +5,15 @@
   import { toast } from './toast'
   import type { Species } from './types'
   import AddSpecies from './AddSpecies.svelte'
-  import SpeciesDetails from './SpeciesDetails.svelte'
   import type { Photo } from './utils/photos'
-  import { createDialog, melt } from '@melt-ui/svelte'
+  import { push } from 'svelte-spa-router'
+  import SpeciesDetailDrawer from './SpeciesDetail.svelte'
 
   let species = $state<Species[]>([])
   let loading = $state(true)
   let error = $state<string | null>(null)
   let unsubscribe: (() => void) | null = $state(null)
+  let speciesDetailDrawer: SpeciesDetailDrawer | undefined = $state(undefined)
 
   async function fetchSpecies() {
     try {
@@ -141,7 +142,7 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
             class="bg-white dark:bg-stone-700 rounded-lg shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow w-full text-left"
-            onclick={() => console.log('dbg', specie)}
+            onclick={() => speciesDetailDrawer?.openSpecies(specie)}
           >
             <div class="flex gap-4">
               <!-- Thumbnail -->
@@ -190,3 +191,5 @@
     />
   </div>
 </div>
+
+<SpeciesDetailDrawer bind:this={speciesDetailDrawer} />

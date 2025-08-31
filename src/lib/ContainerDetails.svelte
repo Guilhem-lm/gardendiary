@@ -338,9 +338,6 @@
             use:melt={$containerActionsItem}
             use:melt={$editContainerTrigger}
             class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
-            onclick={() => {
-              $containerActionsOpen = false
-            }}
           >
             <Settings size={16} />
             Edit
@@ -349,9 +346,6 @@
             use:melt={$containerActionsItem}
             use:melt={$deleteContainerTrigger}
             class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700"
-            onclick={() => {
-              $containerActionsOpen = false
-            }}
           >
             <Trash2 size={16} />
             Delete
@@ -486,7 +480,9 @@
               <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm">
                 <div class="flex items-baseline justify-between">
                   <div class="flex items-baseline gap-2">
-                    <p class="font-medium">{plant.expand?.species.name}</p>
+                    <a href={`#/species?speciesId=${plant.expand?.species.id}`} class="font-medium">
+                      {plant.expand?.species.name}
+                    </a>
                     <div class="flex items-center gap-1">
                       <p class="text-sm text-stone-500 dark:text-stone-400">
                         {plant.quantity || 1} plants
