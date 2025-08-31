@@ -90,8 +90,19 @@
             }
           }
         } else if (action === 'delete') {
-          // Photo deleted - refresh the list
+          // Photo deleted - update the list and adjust the index safely
+          const removedIndex = photos.findIndex((photo) => photo.id === record.id)
           photos = photos.filter((photo) => photo.id !== record.id)
+          if (removedIndex !== -1) {
+            if (currentPhotoIndex > removedIndex) {
+              currentPhotoIndex--
+            } else if (currentPhotoIndex === removedIndex) {
+              // If we deleted the currently displayed photo, clamp to a valid index
+              if (currentPhotoIndex >= photos.length) {
+                currentPhotoIndex = Math.max(0, photos.length - 1)
+              }
+            }
+          }
         } else if (action === 'update') {
           // Photo updated - refresh the list
           const index = photos.findIndex((photo) => photo.id === record.id)
@@ -232,7 +243,9 @@
 
   export function navigateToPhoto(photoId: string) {
     const index = photos.findIndex((photo) => photo.id === photoId)
-    currentPhotoIndex = index
+    if (index !== -1) {
+      currentPhotoIndex = index
+    }
   }
 </script>
 
