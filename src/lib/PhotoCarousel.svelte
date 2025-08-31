@@ -252,7 +252,9 @@
     >
       <div class="absolute inset-0 cursor-zoom-in z-10" use:melt={$fullscreenPhotoTrigger}></div>
       <img
-        src={pb.files.getURL(photos[currentPhotoIndex], photos[currentPhotoIndex].file)}
+        src={pb.files.getURL(photos[currentPhotoIndex], photos[currentPhotoIndex].file, {
+          thumb: '800x800',
+        })}
         alt={`Photo ${currentPhotoIndex + 1} of ${photos.length}`}
         class="w-full h-full object-cover rounded-lg select-none"
         draggable="false"
@@ -382,7 +384,9 @@
 
       <!-- Full screen image -->
       <img
-        src={pb.files.getURL(photos[currentPhotoIndex], photos[currentPhotoIndex].file)}
+        src={pb.files.getURL(photos[currentPhotoIndex], photos[currentPhotoIndex].file, {
+          thumb: '800x800',
+        })}
         alt={`Photo ${currentPhotoIndex + 1} of ${photos.length}`}
         class="max-h-full max-w-full object-contain"
       />

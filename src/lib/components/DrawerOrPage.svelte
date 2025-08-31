@@ -15,7 +15,7 @@
 
   // Create dialog for SpeciesDetails
   const {
-    elements: { content: drawerContent, overlay, portalled },
+    elements: { content: drawerContent, overlay, portalled, close },
     states: { open },
   } = createDialog({
     role: 'dialog',
@@ -25,6 +25,8 @@
       onOpenChange?.(next)
       return next
     },
+    closeOnOutsideClick: false,
+    escapeBehavior: 'ignore',
   })
 
   let isPage = $state(false)
@@ -46,7 +48,7 @@
   <div>
     <!-- Header -->
     <div
-      class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12 py-2 z-10"
+      class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12 py-2 z-20"
     >
       <button
         class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 px-2"
@@ -73,15 +75,15 @@
   </div>
 {:else if $open}
   <div use:melt={$portalled}>
-    <div use:melt={$overlay} class="hidden inset-0 bg-black/50 backdrop-blur-sm z-50"></div>
-    <div use:melt={$drawerContent} class="z-50">
+    <div use:melt={$overlay} class="hidden inset-0 bg-black/50 backdrop-blur-sm z-20"></div>
+    <div use:melt={$drawerContent} class="z-20">
       <div
-        class="fixed inset-0 bg-stone-50 dark:bg-stone-800 overflow-y-auto h-screen"
+        class="fixed inset-0 bg-stone-50 dark:bg-stone-800 overflow-y-auto h-full"
         transition:fly={{ x: '-100%', duration: 300 }}
       >
         <!-- Header -->
         <div
-          class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12 py-2 z-10"
+          class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12 py-2 z-20"
         >
           <button
             class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 px-2"

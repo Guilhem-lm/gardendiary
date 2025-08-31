@@ -580,78 +580,80 @@
       {#if !container.expand?.plants || container.expand.plants.length === 0}
         <p class="text-stone-500 dark:text-stone-400">No plants in this container yet.</p>
       {:else}
-        {#each container.expand.plants as plant}
-          <div
-            class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm flex justify-between gap-x-3 items-start"
-          >
-            <div class="flex items-center gap-x-3 flex-wrap gap-y-1">
-              <div class="flex items-center gap-2 flex-nowrap">
-                <a
-                  href={`#/species?speciesId=${plant.expand?.species.id}`}
-                  class="font-medium whitespace-nowrap">{plant.expand?.species.name}</a
-                >
-                <div class="flex items-center gap-1">
-                  <p class="text-sm text-stone-500 dark:text-stone-400">
-                    {`(${plant.quantity || 1})`}
-                  </p>
+        <div class="flex flex-col gap-2">
+          {#each container.expand.plants as plant}
+            <div
+              class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm flex justify-between gap-x-3 items-start"
+            >
+              <div class="flex items-center gap-x-3 flex-wrap gap-y-1">
+                <div class="flex items-center gap-2 flex-nowrap">
+                  <a
+                    href={`#/species?speciesId=${plant.expand?.species.id}`}
+                    class="font-medium whitespace-nowrap">{plant.expand?.species.name}</a
+                  >
+                  <div class="flex items-center gap-1">
+                    <p class="text-sm text-stone-500 dark:text-stone-400">
+                      {`(${plant.quantity || 1})`}
+                    </p>
+                  </div>
                 </div>
+                {#if plant.sown_at}
+                  <div class="flex items-center gap-1 text-stone-500 dark:text-stone-400">
+                    <Bean size={14} />
+                    <span class="text-sm">
+                      {new Date(plant.sown_at).toLocaleDateString()}
+                    </span>
+                  </div>
+                {/if}
               </div>
-              {#if plant.sown_at}
-                <div class="flex items-center gap-1 text-stone-500 dark:text-stone-400">
-                  <Bean size={14} />
-                  <span class="text-sm">
-                    {new Date(plant.sown_at).toLocaleDateString()}
-                  </span>
+
+              <div class="flex items-center gap-3">
+                <DaysToHarvest {plant} />
+                <button
+                  use:melt={$plantActionsTrigger}
+                  class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                  aria-label="Plant actions"
+                  onclick={() => {
+                    selectedPlantId = plant.id
+                  }}
+                >
+                  <EllipsisVertical size={16} />
+                </button>
+              </div>
+
+              {#if $plantActionsOpen && selectedPlantId === plant.id}
+                <div
+                  use:melt={$plantActionsOverlay}
+                  class="fixed inset-0 z-[300]"
+                  transition:fade={{ duration: 100 }}
+                ></div>
+
+                <div
+                  use:melt={$plantActionsMenu}
+                  class="absolute right-0 mt-1 w-36 bg-white dark:bg-stone-800 rounded-lg shadow-lg py-1 z-[301]"
+                  transition:scale={{ duration: 150, start: 0.95 }}
+                >
+                  <button
+                    use:melt={$plantActionsItem}
+                    use:melt={$editPlantTrigger}
+                    class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
+                  >
+                    <Settings size={16} />
+                    Edit
+                  </button>
+                  <button
+                    use:melt={$plantActionsItem}
+                    use:melt={$deletePlantTrigger}
+                    class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700"
+                  >
+                    <Trash2 size={16} />
+                    Delete
+                  </button>
                 </div>
               {/if}
             </div>
-
-            <div class="flex items-center gap-3">
-              <DaysToHarvest {plant} />
-              <button
-                use:melt={$plantActionsTrigger}
-                class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
-                aria-label="Plant actions"
-                onclick={() => {
-                  selectedPlantId = plant.id
-                }}
-              >
-                <EllipsisVertical size={16} />
-              </button>
-            </div>
-
-            {#if $plantActionsOpen && selectedPlantId === plant.id}
-              <div
-                use:melt={$plantActionsOverlay}
-                class="fixed inset-0 z-[300]"
-                transition:fade={{ duration: 100 }}
-              ></div>
-
-              <div
-                use:melt={$plantActionsMenu}
-                class="absolute right-0 mt-1 w-36 bg-white dark:bg-stone-800 rounded-lg shadow-lg py-1 z-[301]"
-                transition:scale={{ duration: 150, start: 0.95 }}
-              >
-                <button
-                  use:melt={$plantActionsItem}
-                  use:melt={$editPlantTrigger}
-                  class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
-                >
-                  <Settings size={16} />
-                  Edit
-                </button>
-                <button
-                  use:melt={$plantActionsItem}
-                  use:melt={$deletePlantTrigger}
-                  class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
-              </div>
-            {/if}
-          </div>
-        {/each}
+          {/each}
+        </div>
       {/if}
     </div>
   {:else}
