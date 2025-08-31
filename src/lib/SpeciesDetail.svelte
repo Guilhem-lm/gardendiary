@@ -8,7 +8,7 @@
   import { createDialog, createDropdownMenu, melt } from '@melt-ui/svelte'
   import PhotoCarousel from './PhotoCarousel.svelte'
   import DrawerOrPage from './components/DrawerOrPage.svelte'
-  import { push } from 'svelte-spa-router'
+  import { tick } from 'svelte'
 
   // Species actions dropdown
   const {
@@ -58,6 +58,13 @@
     preventScroll: true,
     forceVisible: true,
     portal: '#app',
+    onOpenChange: ({ next }) => {
+      if (next) {
+        // initialize form data with the current species state
+        formData = $state.snapshot(species)
+      }
+      return next
+    },
   })
 
   // Form state
@@ -66,7 +73,8 @@
 
   let hasChanges = $derived.by(() => {
     if (!species || !formData) return false
-    formData.name !== species.name ||
+    return (
+      formData.name !== species.name ||
       formData.description !== (species.description || '') ||
       formData.days_to_harvest !== (species.days_to_harvest || 0) ||
       formData.spacing !== (species.spacing || 0) ||
@@ -74,6 +82,7 @@
       JSON.stringify(formData.transplanting) !== JSON.stringify(species.transplanting || []) ||
       formData.direct_sowing !== (species.direct_sowing || false) ||
       formData.tag !== (species.tag || '')
+    )
   })
 
   async function saveSpeciesChanges() {
@@ -128,7 +137,7 @@
     try {
       await pb.collection('species').delete(species.id)
       toast('Species deleted successfully', { type: 'success' })
-      push('/')
+      history.back()
     } catch (error) {
       console.error('Error deleting species:', error)
       toast('Failed to delete species', { type: 'error' })
@@ -155,14 +164,18 @@
   }
 
   export async function openSpecies(newSpecies: Species, isPage?: boolean) {
-    species = newSpecies
-    fetchPlants(species.id)
-    formData = species
+    species = $state.snapshot(newSpecies)
     if (isPage) {
       drawer?.openPage()
     } else {
       drawer?.openDrawer()
     }
+    await tick()
+    fetchPlants(species.id)
+  }
+
+  export function closeDrawer() {
+    drawer?.closeDrawer()
   }
 
   let photoCarousel: PhotoCarousel | undefined = $state(undefined)
@@ -236,115 +249,114 @@
 {#snippet content()}
   {#if species}
     <!-- Content -->
-    <div class="max-w-4xl mx-auto p-4 flex flex-col gap-4">
-      <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
-        <!-- Photo Carousel -->
-        <PhotoCarousel speciesId={species.id} bind:this={photoCarousel} />
 
-        <!-- Species Details -->
-        <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm md:grow min-w-0 md:h-96">
-          <div class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400">
-            <!-- Description -->
-            <div class="flex items-start gap-2">
-              <span class="font-semibold text-stone-600 dark:text-stone-300">Description:</span>
-              <p class="flex-1">{species.description || 'No description'}</p>
-            </div>
+    <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
+      <!-- Photo Carousel -->
+      <PhotoCarousel speciesId={species.id} bind:this={photoCarousel} />
 
-            <!-- Days to Harvest -->
-            {#if species.days_to_harvest}
-              <div class="flex items-center gap-2">
-                <span class="font-semibold text-stone-600 dark:text-stone-300"
-                  >Days to Harvest:</span
-                >
-                <p>{species.days_to_harvest} days</p>
-              </div>
-            {/if}
-
-            <!-- Spacing -->
-            {#if species.spacing}
-              <div class="flex items-center gap-2">
-                <span class="font-semibold text-stone-600 dark:text-stone-300">Spacing:</span>
-                <p>{species.spacing} cm</p>
-              </div>
-            {/if}
-
-            <!-- Sowing Months -->
-            {#if species.sowing && species.sowing.length > 0}
-              <div class="flex items-start gap-2">
-                <span class="font-semibold text-stone-600 dark:text-stone-300">Sowing:</span>
-
-                <div class="flex flex-wrap gap-1">
-                  {#each species.sowing as month}
-                    <div
-                      class="h-6 rounded-md bg-lime-100 dark:bg-lime-900 flex items-center justify-center text-xs px-1 font-medium text-stone-700 dark:text-stone-100"
-                    >
-                      {month.slice(0, 3)}
-                    </div>
-                  {/each}
-                </div>
-              </div>
-            {:else}
-              <span class="font-semibold text-stone-600 dark:text-stone-300">No direct sowing</span>
-            {/if}
-
-            <!-- Transplanting Months -->
-            {#if species.transplanting && species.transplanting.length > 0}
-              <div class="flex items-start gap-2">
-                <span class="font-medium">Transplanting:</span>
-
-                <div class="flex flex-wrap gap-1">
-                  {#each species.transplanting as month}
-                    <div
-                      class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xs font-medium text-blue-700 dark:text-blue-300"
-                    >
-                      {month.slice(0, 3)}
-                    </div>
-                  {/each}
-                </div>
-              </div>
-            {:else}
-              <span class="font-semibold text-stone-600 dark:text-stone-300">Direct sowing</span>
-            {/if}
+      <!-- Species Details -->
+      <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm md:grow min-w-0 md:h-96">
+        <div class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400">
+          <!-- Description -->
+          <div class="flex items-start gap-2">
+            <span class="font-semibold text-stone-600 dark:text-stone-300">Description:</span>
+            <p class="flex-1">{species.description || 'No description'}</p>
           </div>
+
+          <!-- Days to Harvest -->
+          {#if species.days_to_harvest}
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-stone-600 dark:text-stone-300">Days to Harvest:</span>
+              <p>{species.days_to_harvest} days</p>
+            </div>
+          {/if}
+
+          <!-- Spacing -->
+          {#if species.spacing}
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-stone-600 dark:text-stone-300">Spacing:</span>
+              <p>{species.spacing} cm</p>
+            </div>
+          {/if}
+
+          <!-- Sowing Months -->
+          {#if species.sowing && species.sowing.length > 0}
+            <div class="flex items-start gap-2">
+              <span class="font-semibold text-stone-600 dark:text-stone-300">Sowing:</span>
+
+              <div class="flex flex-wrap gap-1">
+                {#each species.sowing as month}
+                  <div
+                    class="h-6 rounded-md bg-lime-100 dark:bg-lime-900 flex items-center justify-center text-xs px-1 font-medium text-stone-700 dark:text-stone-100"
+                  >
+                    {month.slice(0, 3)}
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <span class="font-semibold text-stone-600 dark:text-stone-300">No direct sowing</span>
+          {/if}
+
+          <!-- Transplanting Months -->
+          {#if species.transplanting && species.transplanting.length > 0}
+            <div class="flex items-start gap-2">
+              <span class="font-medium">Transplanting:</span>
+
+              <div class="flex flex-wrap gap-1">
+                {#each species.transplanting as month}
+                  <div
+                    class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xs font-medium text-blue-700 dark:text-blue-300"
+                  >
+                    {month.slice(0, 3)}
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <span class="font-semibold text-stone-600 dark:text-stone-300">Direct sowing</span>
+          {/if}
         </div>
       </div>
+    </div>
 
-      <!-- Plants List -->
-      <div>
-        <h2 class="text-lg font-semibold mb-3">Plants of this species</h2>
-        {#if loadingPlants}
-          <p class="text-stone-500 dark:text-stone-400">Loading plants...</p>
-        {:else if plants.length === 0}
-          <p class="text-stone-500 dark:text-stone-400">
-            No plants of this species in containers yet.
-          </p>
-        {:else}
-          <div class="grid gap-3">
-            {#each plants as plant}
-              <div class="bg-stone-50 dark:bg-stone-700 rounded-lg p-4">
-                {#if plant.expand?.containers_via_plants && plant.expand?.containers_via_plants.length > 0}
-                  {@const container = plant.expand?.containers_via_plants[0]}
-                  <div class="flex items-baseline justify-between">
-                    <div class="flex items-baseline gap-2">
-                      <p class="font-medium">
-                        In container: {container.name || 'Unknown container'}
-                      </p>
-                      <p class="text-sm text-stone-500 dark:text-stone-400">
-                        {plant.quantity || 1} plants
-                      </p>
-                    </div>
+    <!-- Plants List -->
+    <div>
+      <h2 class="text-lg font-semibold mb-3">
+        Plants of this species ({loadingPlants ? '...' : plants.length})
+      </h2>
+      {#if loadingPlants}
+        <p class="text-stone-500 dark:text-stone-400">Loading plants...</p>
+      {:else if plants.length === 0}
+        <p class="text-stone-500 dark:text-stone-400">
+          No plants of this species in containers yet.
+        </p>
+      {:else}
+        <div class="grid gap-3">
+          {#each plants as plant}
+            <div class="bg-stone-50 dark:bg-stone-700 rounded-lg p-4">
+              {#if plant.expand?.containers_via_plants && plant.expand?.containers_via_plants.length > 0}
+                {@const container = plant.expand?.containers_via_plants[0]}
+                <div class="flex items-baseline justify-between">
+                  <div class="flex items-baseline gap-2">
+                    <p class="font-medium">
+                      In container: {container.name || 'Unknown container'}
+                    </p>
+                    <p class="text-sm text-stone-500 dark:text-stone-400">
+                      {plant.quantity || 1} plants
+                    </p>
                   </div>
-                  <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">
-                    Location: {container.location || '-'}
-                  </p>
-                {:else}
-                  <p class="font-medium">Not in a container</p>
-                {/if}
-              </div>
-            {/each}
-          </div>
-        {/if}
-      </div>
+                </div>
+                <p class="text-sm text-stone-500 dark:text-stone-400 mt-1">
+                  Location: {container.location || '-'}
+                </p>
+              {:else}
+                <p class="font-medium">Not in a container</p>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      {/if}
     </div>
   {:else}
     <p class="text-stone-500 dark:text-stone-400">Loading species...</p>

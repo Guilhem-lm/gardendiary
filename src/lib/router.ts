@@ -1,7 +1,7 @@
-import Login from './routes/Login.svelte'
+import Home from './routes/Home.svelte'
 import SpeciesDetailPage from './routes/SpeciesDetailPage.svelte'
 
 export const routes = {
-  '/': Login,
+  '/': Home,
   '/species': SpeciesDetailPage,
 }

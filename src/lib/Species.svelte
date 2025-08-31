@@ -1,13 +1,19 @@
 <!-- Species.svelte -->
 <script lang="ts">
   import { pb } from './pocketbase.svelte'
-  import { onMount, onDestroy } from 'svelte'
+  import { onMount, onDestroy, untrack } from 'svelte'
   import { toast } from './toast'
   import type { Species } from './types'
   import AddSpecies from './AddSpecies.svelte'
   import type { Photo } from './utils/photos'
   import { push } from 'svelte-spa-router'
   import SpeciesDetailDrawer from './SpeciesDetail.svelte'
+
+  interface Props {
+    selectedSpeciesId: string | null
+  }
+
+  let { selectedSpeciesId = null }: Props = $props()
 
   let species = $state<Species[]>([])
   let loading = $state(true)
@@ -123,6 +129,16 @@
   }
 
   let scrollContainer: HTMLElement | undefined = $state(undefined)
+
+  $effect(() => {
+    if (selectedSpeciesId) {
+      untrack(() =>
+        speciesDetailDrawer?.openSpecies(species.find((s) => s.id === selectedSpeciesId)!)
+      )
+    } else {
+      untrack(() => speciesDetailDrawer?.closeDrawer())
+    }
+  })
 </script>
 
 <div class="h-full flex flex-col">
@@ -142,7 +158,7 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
             class="bg-white dark:bg-stone-700 rounded-lg shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow w-full text-left"
-            onclick={() => speciesDetailDrawer?.openSpecies(specie)}
+            onclick={() => push(`/?view=species&speciesId=${specie.id}`)}
           >
             <div class="flex gap-4">
               <!-- Thumbnail -->

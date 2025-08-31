@@ -5,8 +5,7 @@
   import SpeciesComponent from '../Species.svelte'
   import Navigation from '../Navigation.svelte'
   import { toast } from '../toast'
-
-  let currentView = $state<'containers' | 'species'>('containers')
+  import { location, querystring } from 'svelte-spa-router'
 
   let email = $state('')
   let password = $state('')
@@ -30,6 +29,14 @@
   }
 
   let currentUser = $derived.by(getCurrentUser)
+
+  const queryParams = $derived(new URLSearchParams($querystring || ''))
+
+  const currentView = $derived(
+    (queryParams.get('view') as 'containers' | 'species') || 'containers'
+  )
+
+  const selectedSpeciesId = $derived(queryParams.get('speciesId'))
 </script>
 
 <style>
@@ -43,15 +50,15 @@
 {#if currentUser}
   <div class="flex flex-col h-full md:flex-row">
     <!-- Main content -->
-    <Navigation bind:currentView />
+    <Navigation {currentView} />
     <div class="grow min-h-0 overflow-auto min-w-0">
       {#if currentView === 'containers'}
         <Container />
       {:else if currentView === 'species'}
-        <SpeciesComponent />
+        <SpeciesComponent {selectedSpeciesId} />
       {/if}
     </div>
-    <Navigation bind:currentView mobile />
+    <Navigation mobile {currentView} />
   </div>
 {:else}
   <div class="flex flex-col min-h-screen justify-center items-center">

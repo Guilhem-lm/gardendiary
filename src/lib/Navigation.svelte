@@ -2,13 +2,14 @@
 <script lang="ts">
   import { Sprout, Leaf, LogOut } from 'lucide-svelte'
   import { pb } from './pocketbase.svelte'
+  import { push } from 'svelte-spa-router'
 
   interface Props {
-    currentView?: 'containers' | 'species'
     mobile?: boolean
+    currentView?: 'containers' | 'species'
   }
 
-  let { currentView = $bindable('containers'), mobile = false }: Props = $props()
+  let { mobile = false, currentView = 'containers' }: Props = $props()
 
   function logout() {
     pb.authStore.clear()
@@ -26,7 +27,7 @@
         class="flex flex-col items-center justify-center flex-1 h-full {currentView === 'containers'
           ? 'text-lime-600 dark:text-lime-500'
           : 'text-stone-400 dark:text-stone-500'}"
-        onclick={() => (currentView = 'containers')}
+        onclick={() => push('/?view=containers')}
       >
         <Sprout size={20} />
         <span class="text-xs mt-1">Containers</span>
@@ -35,7 +36,7 @@
         class="flex flex-col items-center justify-center flex-1 h-full {currentView === 'species'
           ? 'text-lime-600 dark:text-lime-500'
           : 'text-stone-400 dark:text-stone-500'}"
-        onclick={() => (currentView = 'species')}
+        onclick={() => push('/?view=species')}
       >
         <Leaf size={20} />
         <span class="text-xs mt-1">Species</span>
@@ -57,7 +58,7 @@
         class="flex items-center gap-2 px-3 py-2 rounded-lg {currentView === 'containers'
           ? 'bg-lime-100 dark:bg-lime-900 dark:text-lime-200 text-lime-700'
           : 'text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700'}"
-        onclick={() => (currentView = 'containers')}
+        onclick={() => push('/?view=containers')}
       >
         <Sprout size={20} />
         <span>Containers</span>
@@ -66,7 +67,7 @@
         class="flex items-center gap-2 px-3 py-2 rounded-lg {currentView === 'species'
           ? 'bg-lime-100 dark:bg-lime-900 dark:text-lime-200 text-lime-700'
           : 'text-stone-500 dark:text-stone-400 hover:bg-stone-100 dark:hover:bg-stone-700'}"
-        onclick={() => (currentView = 'species')}
+        onclick={() => push('/?view=species')}
       >
         <Leaf size={20} />
         <span>Species</span>

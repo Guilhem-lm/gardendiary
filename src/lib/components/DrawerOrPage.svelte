@@ -15,7 +15,7 @@
 
   // Create dialog for SpeciesDetails
   const {
-    elements: { content: drawerContent, overlay, portalled, close },
+    elements: { content: drawerContent, overlay, portalled },
     states: { open },
   } = createDialog({
     role: 'dialog',
@@ -84,8 +84,10 @@
           class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12 py-2 z-10"
         >
           <button
-            use:melt={$close}
             class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 px-2"
+            onclick={() => {
+              history.back()
+            }}
           >
             <ArrowLeft size={24} />
           </button>
