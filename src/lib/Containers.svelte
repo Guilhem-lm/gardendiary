@@ -8,6 +8,7 @@
   import { getContainerPlants } from './utils/container'
   import type { Container } from './types'
   import { getMostRecentPhoto, type Photo } from './utils/photos'
+  import { createDialog, melt } from '@melt-ui/svelte'
 
   let selectedContainer = $state<Container | null>(null)
 
@@ -16,6 +17,31 @@
   let error = $state<string | null>(null)
   let unsubscribe: (() => void) | null = $state(null)
   let scrollContainer: HTMLElement | undefined = $state(undefined)
+
+  // Create dialog for ContainerDetails
+  const {
+    elements: { content, overlay, portalled },
+    states: { open },
+  } = createDialog({
+    role: 'dialog',
+    preventScroll: true,
+    portal: '#app',
+    onOpenChange: ({ next }) => {
+      if (!next) {
+        selectedContainer = null
+      }
+      return next
+    },
+  })
+
+  // Watch for selectedContainer changes to open/close dialog
+  $effect(() => {
+    if (selectedContainer) {
+      $open = true
+    } else {
+      $open = false
+    }
+  })
 
   async function fetchContainers() {
     try {
@@ -242,7 +268,15 @@
     />
   </div>
 
-  {#if selectedContainer}
-    <ContainerDetails container={selectedContainer} onClose={() => (selectedContainer = null)} />
+  {#if $open && selectedContainer}
+    <div use:melt={$portalled}>
+      <div use:melt={$overlay} class="hidden inset-0 bg-black/50 backdrop-blur-sm z-50"></div>
+      <div use:melt={$content} class="z-50">
+        <ContainerDetails
+          container={selectedContainer}
+          onClose={() => (selectedContainer = null)}
+        />
+      </div>
+    </div>
   {/if}
 </div>

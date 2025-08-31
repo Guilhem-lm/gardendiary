@@ -23,6 +23,12 @@
     role: 'dialog',
     preventScroll: true,
     portal: '#app',
+    onOpenChange: ({ next }) => {
+      if (!next) {
+        selectedSpecies = null
+      }
+      return next
+    },
   })
 
   // Watch for selectedSpecies changes to open/close dialog
@@ -31,13 +37,6 @@
       $open = true
     } else {
       $open = false
-    }
-  })
-
-  // Watch for dialog open state to clear selectedSpecies when closed
-  $effect(() => {
-    if (!$open) {
-      selectedSpecies = null
     }
   })
 
