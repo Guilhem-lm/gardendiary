@@ -21,7 +21,12 @@
   import { tick } from 'svelte'
   import DaysToHarvest from './DaysToHarvest.svelte'
 
-  let container: Container | null = $state(null)
+  interface Props {
+    container: Container | undefined
+    isPage?: boolean
+  }
+
+  let { container, isPage }: Props = $props()
 
   // Container actions dropdown
   const {
@@ -269,6 +274,12 @@
   } = createDialog({
     role: 'dialog',
     preventScroll: true,
+    onOpenChange: ({ next }) => {
+      if (next) {
+        fetchSpecies()
+      }
+      return next
+    },
   })
 
   let species = $state<Species[]>([])
@@ -326,12 +337,6 @@
     }
   }
 
-  $effect(() => {
-    if ($addPlantOpen) {
-      fetchSpecies()
-    }
-  })
-
   function formatDate(date: string | null | undefined) {
     if (!date) return '-'
     return new Date(date).toLocaleDateString(undefined, {
@@ -386,20 +391,17 @@
   let photoCarousel: PhotoCarousel | undefined = $state(undefined)
   let drawer: DrawerOrPage | undefined = $state(undefined)
 
-  export async function openContainer(newContainer: Container, isPage?: boolean) {
-    container = $state.snapshot(newContainer)
-    if (isPage) {
-      drawer?.openPage()
-    } else {
-      drawer?.openDrawer()
-    }
-    await tick()
-  }
-
-  export function closeDrawer() {
-    drawer?.closeDrawer()
-  }
+  const drawerOpen = $derived(container !== undefined)
 </script>
+
+<DrawerOrPage
+  title={container?.name || 'Loading...'}
+  bind:this={drawer}
+  {actions}
+  {content}
+  {isPage}
+  isOpen={drawerOpen}
+/>
 
 {#snippet actions()}
   {#if container}
@@ -660,8 +662,6 @@
     <p class="text-stone-500 dark:text-stone-400">Loading container...</p>
   {/if}
 {/snippet}
-
-<DrawerOrPage title={container?.name || 'Loading...'} bind:this={drawer} {actions} {content} />
 
 <!-- Delete Container Dialog -->
 {#if $deleteContainerOpen}

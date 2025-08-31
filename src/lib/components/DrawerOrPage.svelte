@@ -9,9 +9,11 @@
     onOpenChange?: (open: boolean) => void
     actions: Snippet
     title: string
+    isPage?: boolean
+    isOpen?: boolean
   }
 
-  const { content, onOpenChange, actions, title }: Props = $props()
+  const { content, onOpenChange, actions, title, isPage, isOpen }: Props = $props()
 
   // Create dialog for SpeciesDetails
   const {
@@ -29,19 +31,13 @@
     escapeBehavior: 'ignore',
   })
 
-  let isPage = $state(false)
-
-  export function openDrawer() {
-    $open = true
-  }
-
-  export function closeDrawer() {
-    $open = false
-  }
-
-  export function openPage() {
-    isPage = true
-  }
+  $effect(() => {
+    if (isOpen) {
+      $open = true
+    } else {
+      $open = false
+    }
+  })
 </script>
 
 {#if isPage}

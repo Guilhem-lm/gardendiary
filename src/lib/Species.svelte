@@ -20,7 +20,6 @@
   let loading = $state(true)
   let error = $state<string | null>(null)
   let unsubscribe: (() => void) | null = $state(null)
-  let speciesDetailDrawer: SpeciesDetailDrawer | undefined = $state(undefined)
 
   async function fetchSpecies() {
     try {
@@ -30,9 +29,6 @@
         sort: '-created',
         expand: 'photos_via_species',
       })
-      if (selectedSpeciesId) {
-        speciesDetailDrawer?.openSpecies(species.find((s) => s.id === selectedSpeciesId)!)
-      }
     } catch (err) {
       error = 'Failed to load species'
       toast('Failed to load species', { type: 'error' })
@@ -132,15 +128,7 @@
     return thumbnails
   }
 
-  $effect(() => {
-    if (selectedSpeciesId) {
-      untrack(() =>
-        speciesDetailDrawer?.openSpecies(species.find((s) => s.id === selectedSpeciesId)!)
-      )
-    } else {
-      untrack(() => speciesDetailDrawer?.closeDrawer())
-    }
-  })
+  const selectedSpecies = $derived(species.find((s) => s.id === selectedSpeciesId))
 </script>
 
 <div class="h-full flex flex-col">
@@ -208,4 +196,4 @@
   </div>
 </div>
 
-<SpeciesDetailDrawer bind:this={speciesDetailDrawer} />
+<SpeciesDetailDrawer species={selectedSpecies} />

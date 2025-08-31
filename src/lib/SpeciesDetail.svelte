@@ -10,6 +10,13 @@
   import DrawerOrPage from './components/DrawerOrPage.svelte'
   import { tick } from 'svelte'
 
+  interface Props {
+    species: Species | undefined
+    isPage?: boolean
+  }
+
+  let { species, isPage }: Props = $props()
+
   // Species actions dropdown
   const {
     elements: {
@@ -61,7 +68,9 @@
     onOpenChange: ({ next }) => {
       if (next) {
         // initialize form data with the current species state
-        formData = $state.snapshot(species)
+        if (species) {
+          formData = $state.snapshot(species)
+        }
       }
       return next
     },
@@ -69,7 +78,6 @@
 
   // Form state
   let formData: Species | null = $state(null)
-  let species: Species | null = $state(null)
 
   let hasChanges = $derived.by(() => {
     if (!species || !formData) return false
@@ -164,26 +172,24 @@
     }
   }
 
-  export async function openSpecies(newSpecies: Species, isPage?: boolean) {
-    if (!newSpecies || !newSpecies.id) return
-    species = $state.snapshot(newSpecies)
-    if (isPage) {
-      drawer?.openPage()
-    } else {
-      drawer?.openDrawer()
-    }
-    await tick()
-    fetchPlants(species.id)
-  }
-
-  export function closeDrawer() {
-    drawer?.closeDrawer()
-  }
-
   let photoCarousel: PhotoCarousel | undefined = $state(undefined)
 
-  let drawer: DrawerOrPage | undefined = $state(undefined)
+  const drawerOpen = $derived(species !== undefined)
+
+  $effect(() => {
+    if (species) {
+      fetchPlants(species.id)
+    }
+  })
 </script>
+
+<DrawerOrPage
+  title={species?.name || 'Loading...'}
+  {actions}
+  {content}
+  isOpen={drawerOpen}
+  {isPage}
+/>
 
 {#snippet actions()}
   <div class="flex gap-2 items-center">
@@ -381,8 +387,6 @@
     <p class="text-stone-500 dark:text-stone-400">Loading species...</p>
   {/if}
 {/snippet}
-
-<DrawerOrPage title={species?.name || 'Loading...'} bind:this={drawer} {actions} {content} />
 
 {#if $editSpeciesOpen && formData}
   <div class="" use:melt={$editSpeciesPortalled}>

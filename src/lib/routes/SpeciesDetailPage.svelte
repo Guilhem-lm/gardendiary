@@ -5,7 +5,7 @@
   import type { Species } from '../types'
   import { untrack } from 'svelte'
 
-  let speciesDetailDrawer: SpeciesDetailDrawer | undefined = $state(undefined)
+  let species: Species | undefined = $state(undefined)
   let loading = $state(true)
   let error = $state<string | null>(null)
 
@@ -16,14 +16,10 @@
     loading = true
     error = null
     try {
-      const species = await pb.collection('species').getOne<Species>(speciesId, {
+      const selectedSpecies = await pb.collection('species').getOne<Species>(speciesId, {
         expand: 'photos_via_species',
       })
-
-      // Open the species detail drawer in page mode
-      if (speciesDetailDrawer) {
-        await speciesDetailDrawer.openSpecies(species, true)
-      }
+      species = selectedSpecies
     } catch (err) {
       error = 'Failed to load species'
       console.error('Error fetching species:', err)
@@ -48,4 +44,4 @@
   <p>{error}</p>
 {/if}
 
-<SpeciesDetailDrawer bind:this={speciesDetailDrawer} />
+<SpeciesDetailDrawer {species} isPage />

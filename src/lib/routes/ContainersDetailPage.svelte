@@ -1,13 +1,13 @@
 <script lang="ts">
-  import ContainerDetailsDrawer from '../ContainerDetails.svelte'
+  import ContainerDetails from '../ContainerDetails.svelte'
   import { pb } from '../pocketbase.svelte'
   import { querystring } from 'svelte-spa-router'
   import type { Container } from '../types'
   import { onMount } from 'svelte'
 
-  let containerDetailDrawer: ContainerDetailsDrawer | undefined = $state(undefined)
   let loading = $state(true)
   let error = $state<string | null>(null)
+  let container: Container | undefined = $state(undefined)
 
   async function fetchContainer() {
     loading = true
@@ -21,13 +21,11 @@
         return
       }
 
-      const container = await pb.collection('containers').getOne<Container>(containerId, {
+      const selectedContainer = await pb.collection('containers').getOne<Container>(containerId, {
         expand: 'plants.species, user, photos_via_container',
       })
 
-      if (containerDetailDrawer) {
-        await containerDetailDrawer.openContainer(container, true)
-      }
+      container = selectedContainer
     } catch (err) {
       error = 'Failed to load container'
       console.error('Error fetching container:', err)
@@ -45,6 +43,6 @@
   <p>Loading...</p>
 {:else if error}
   <p>{error}</p>
+{:else if container}
+  <ContainerDetails {container} isPage />
 {/if}
-
-<ContainerDetailsDrawer bind:this={containerDetailDrawer} />

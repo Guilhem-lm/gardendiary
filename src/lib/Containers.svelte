@@ -23,8 +23,6 @@
   let error = $state<string | null>(null)
   let unsubscribe: (() => void) | null = $state(null)
 
-  let containerDetailDrawer: ContainerDetails | undefined = $state(undefined)
-
   async function fetchContainers() {
     try {
       loading = true
@@ -137,15 +135,8 @@
     return thumbnails
   }
 
-  $effect(() => {
-    if (selectedContainerId) {
-      const found = containers.find((c) => c.id === selectedContainerId)
-      if (found) {
-        untrack(() => containerDetailDrawer?.openContainer(found))
-      }
-    } else {
-      untrack(() => containerDetailDrawer?.closeDrawer())
-    }
+  const selectedContainerIndex = $derived.by(() => {
+    return containers.findIndex((c) => c.id === selectedContainerId)
   })
 </script>
 
@@ -235,5 +226,9 @@
     />
   </div>
 
-  <ContainerDetails bind:this={containerDetailDrawer} />
+  <ContainerDetails
+    container={selectedContainerIndex >= 0 && selectedContainerIndex < containers.length
+      ? containers[selectedContainerIndex]
+      : undefined}
+  />
 </div>
