@@ -11,9 +11,10 @@
 
   interface Props {
     selectedSpeciesId: string | null
+    scrollTop?: () => void
   }
 
-  let { selectedSpeciesId = null }: Props = $props()
+  let { selectedSpeciesId = null, scrollTop }: Props = $props()
 
   let species = $state<Species[]>([])
   let loading = $state(true)
@@ -131,8 +132,6 @@
     return thumbnails
   }
 
-  let scrollContainer: HTMLElement | undefined = $state(undefined)
-
   $effect(() => {
     if (selectedSpeciesId) {
       untrack(() =>
@@ -145,7 +144,7 @@
 </script>
 
 <div class="h-full flex flex-col">
-  <div class="flex-1 p-4" bind:this={scrollContainer}>
+  <div class="flex-1 p-4">
     {#if loading}
       <p class="text-center">Loading species...</p>
     {:else if error}
@@ -203,9 +202,7 @@
   <div class="fixed md:absolute right-4 md:top-6 md:right-10 bottom-18 h-fit">
     <AddSpecies
       onSpeciesAdded={() => {
-        if (scrollContainer) {
-          scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
-        }
+        scrollTop?.()
       }}
     />
   </div>

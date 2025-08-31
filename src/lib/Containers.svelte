@@ -13,15 +13,15 @@
 
   interface Props {
     selectedContainerId: string | null
+    scrollTop?: () => void
   }
 
-  let { selectedContainerId = null }: Props = $props()
+  let { selectedContainerId = null, scrollTop }: Props = $props()
 
   let containers = $state<Container[]>([])
   let loading = $state(true)
   let error = $state<string | null>(null)
   let unsubscribe: (() => void) | null = $state(null)
-  let scrollContainer: HTMLElement | undefined = $state(undefined)
 
   let containerDetailDrawer: ContainerDetails | undefined = $state(undefined)
 
@@ -150,7 +150,7 @@
 </script>
 
 <div class="flex flex-col">
-  <div class="flex-1 p-4" bind:this={scrollContainer}>
+  <div class="flex-1 p-4">
     {#if loading}
       <p class="text-center">Loading containers...</p>
     {:else if error}
@@ -230,9 +230,7 @@
     <AddContainer
       onContainerAdded={() => {
         // Scroll to top of the container
-        if (scrollContainer) {
-          scrollContainer.scrollTo({ top: 0, behavior: 'smooth' })
-        }
+        scrollTop?.()
       }}
     />
   </div>

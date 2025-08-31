@@ -38,6 +38,8 @@
 
   const selectedSpeciesId = $derived(queryParams.get('speciesId'))
   const selectedContainerId = $derived(queryParams.get('containerId'))
+
+  let mainScrollContainer: HTMLElement | undefined = $state(undefined)
 </script>
 
 <style>
@@ -52,11 +54,17 @@
   <div class="flex flex-col h-full md:flex-row">
     <!-- Main content -->
     <Navigation {currentView} />
-    <div class="grow min-h-0 overflow-auto min-w-0">
+    <div class="grow min-h-0 overflow-y-auto min-w-0" bind:this={mainScrollContainer}>
       {#if currentView === 'containers'}
-        <Container {selectedContainerId} />
+        <Container
+          {selectedContainerId}
+          scrollTop={() => mainScrollContainer?.scrollTo({ top: 0, behavior: 'smooth' })}
+        />
       {:else if currentView === 'species'}
-        <SpeciesComponent {selectedSpeciesId} />
+        <SpeciesComponent
+          {selectedSpeciesId}
+          scrollTop={() => mainScrollContainer?.scrollTo({ top: 0, behavior: 'smooth' })}
+        />
       {/if}
     </div>
     <Navigation mobile {currentView} />
