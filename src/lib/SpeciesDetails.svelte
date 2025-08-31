@@ -55,21 +55,37 @@
       content: editSpeciesContent,
       overlay: editSpeciesOverlay,
       close: editSpeciesClose,
+      portalled: editSpeciesPortalled,
     },
     states: { open: editSpeciesOpen },
   } = createDialog({
     role: 'dialog',
     preventScroll: true,
+    forceVisible: true,
+    portal: '#app',
   })
 
   // Form state
   let formData = $state({
     name: species.name,
     description: species.description || '',
+    days_to_harvest: species.days_to_harvest || 0,
+    spacing: species.spacing || 0,
+    sowing: species.sowing || [],
+    transplanting: species.transplanting || [],
+    direct_sowing: species.direct_sowing || false,
+    tag: species.tag || '',
   })
 
   let hasChanges = $derived(
-    formData.name !== species.name || formData.description !== (species.description || '')
+    formData.name !== species.name ||
+      formData.description !== (species.description || '') ||
+      formData.days_to_harvest !== (species.days_to_harvest || 0) ||
+      formData.spacing !== (species.spacing || 0) ||
+      JSON.stringify(formData.sowing) !== JSON.stringify(species.sowing || []) ||
+      JSON.stringify(formData.transplanting) !== JSON.stringify(species.transplanting || []) ||
+      formData.direct_sowing !== (species.direct_sowing || false) ||
+      formData.tag !== (species.tag || '')
   )
 
   async function saveSpeciesChanges() {
@@ -150,10 +166,12 @@
   })
 
   let photoCarousel: PhotoCarousel | undefined = $state(undefined)
+
+  $inspect('editSpeciesOpen', $editSpeciesOpen)
 </script>
 
 <div
-  class="fixed inset-0 bg-stone-50 dark:bg-stone-800 z-[200] overflow-y-auto h-screen"
+  class="fixed inset-0 bg-stone-50 dark:bg-stone-800 overflow-y-auto h-screen"
   transition:fly={{ x: '-100%', duration: 300 }}
 >
   <!-- Header -->
@@ -244,9 +262,63 @@
         <div class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400">
           <!-- Description -->
           <div class="flex items-start gap-2">
-            <span class="font-medium">Description:</span>
+            <span class="font-semibold text-stone-600 dark:text-stone-300">Description:</span>
             <p class="flex-1">{species.description || 'No description'}</p>
           </div>
+
+          <!-- Days to Harvest -->
+          {#if species.days_to_harvest}
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-stone-600 dark:text-stone-300">Days to Harvest:</span>
+              <p>{species.days_to_harvest} days</p>
+            </div>
+          {/if}
+
+          <!-- Spacing -->
+          {#if species.spacing}
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-stone-600 dark:text-stone-300">Spacing:</span>
+              <p>{species.spacing} cm</p>
+            </div>
+          {/if}
+
+          <!-- Sowing Months -->
+          {#if species.sowing && species.sowing.length > 0}
+            <div class="flex items-start gap-2">
+              <span class="font-semibold text-stone-600 dark:text-stone-300">Sowing:</span>
+
+              <div class="flex flex-wrap gap-1">
+                {#each species.sowing as month}
+                  <div
+                    class="h-6 rounded-md bg-lime-100 dark:bg-lime-900 flex items-center justify-center text-xs px-1 font-medium text-stone-700 dark:text-stone-100"
+                  >
+                    {month.slice(0, 3)}
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <span class="font-semibold text-stone-600 dark:text-stone-300">No direct sowing</span>
+          {/if}
+
+          <!-- Transplanting Months -->
+          {#if species.transplanting && species.transplanting.length > 0}
+            <div class="flex items-start gap-2">
+              <span class="font-medium">Transplanting:</span>
+
+              <div class="flex flex-wrap gap-1">
+                {#each species.transplanting as month}
+                  <div
+                    class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xs font-medium text-blue-700 dark:text-blue-300"
+                  >
+                    {month.slice(0, 3)}
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {:else}
+            <span class="font-semibold text-stone-600 dark:text-stone-300">Direct sowing</span>
+          {/if}
         </div>
       </div>
     </div>
@@ -291,70 +363,153 @@
 </div>
 
 {#if $editSpeciesOpen}
-  <div
-    use:melt={$editSpeciesOverlay}
-    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[300]"
-    transition:fade={{ duration: 150 }}
-  ></div>
+  <div class="" use:melt={$editSpeciesPortalled}>
+    <div
+      use:melt={$editSpeciesOverlay}
+      class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+      transition:fade={{ duration: 150 }}
+    ></div>
 
-  <div
-    use:melt={$editSpeciesContent}
-    class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[301]"
-    transition:scale={{ duration: 150, start: 0.95 }}
-  >
-    <div class="flex items-center justify-between">
-      <h2 class="text-lg font-semibold">Edit Species</h2>
-      <button use:melt={$editSpeciesClose} class="text-stone-400 hover:text-stone-600">
-        <X size={20} />
-      </button>
-    </div>
-
-    <form
-      onsubmit={(e) => {
-        e.preventDefault()
-        if (hasChanges) {
-          saveSpeciesChanges()
-        }
-      }}
-      class="mt-4 space-y-4"
+    <div
+      use:melt={$editSpeciesContent}
+      class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-50 max-h-[90vh] overflow-y-auto"
+      transition:scale={{ duration: 150, start: 0.95 }}
     >
-      <div class="space-y-2">
-        <label for="name" class="block text-sm font-medium">Name</label>
-        <input
-          type="text"
-          id="name"
-          bind:value={formData.name}
-          class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
-        />
-      </div>
-
-      <div class="space-y-2">
-        <label for="description" class="block text-sm font-medium">Description</label>
-        <textarea
-          id="description"
-          bind:value={formData.description}
-          rows="3"
-          class="w-full px-3 py-2 border rounded-md dark:bg-stone-700 resize-none"
-        ></textarea>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-4">
-        <button
-          type="button"
-          use:melt={$editSpeciesClose}
-          class="px-4 py-2 text-sm border rounded-md hover:bg-stone-100 dark:hover:bg-stone-700"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 disabled:opacity-50 disabled:hover:bg-lime-700"
-          disabled={!hasChanges}
-        >
-          Save Changes
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold">Edit Species</h2>
+        <button use:melt={$editSpeciesClose} class="text-stone-400 hover:text-stone-600">
+          <X size={20} />
         </button>
       </div>
-    </form>
+
+      <form
+        onsubmit={(e) => {
+          e.preventDefault()
+          if (hasChanges) {
+            saveSpeciesChanges()
+          }
+        }}
+        class="mt-4 space-y-4"
+      >
+        <div class="space-y-2">
+          <label for="name" class="block text-sm font-medium">Name</label>
+          <input
+            type="text"
+            id="name"
+            bind:value={formData.name}
+            class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label for="description" class="block text-sm font-medium">Description</label>
+          <textarea
+            id="description"
+            bind:value={formData.description}
+            rows="3"
+            class="w-full px-3 py-2 border rounded-md dark:bg-stone-700 resize-none"
+          ></textarea>
+        </div>
+
+        <div class="space-y-2">
+          <label for="days_to_harvest" class="block text-sm font-medium">Days to Harvest</label>
+          <input
+            type="number"
+            id="days_to_harvest"
+            bind:value={formData.days_to_harvest}
+            min="0"
+            class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <label for="spacing" class="block text-sm font-medium">Spacing (cm)</label>
+          <input
+            type="number"
+            id="spacing"
+            bind:value={formData.spacing}
+            min="0"
+            class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+          />
+        </div>
+
+        <div class="space-y-2">
+          <span class="block text-sm font-medium">Sowing Months</span>
+          <div class="grid grid-cols-3 gap-2">
+            {#each ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as month}
+              <label class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  value={month}
+                  checked={formData.sowing.includes(month)}
+                  onchange={(e) => {
+                    const target = e.target as HTMLInputElement
+                    if (target.checked) {
+                      formData.sowing = [...formData.sowing, month]
+                    } else {
+                      formData.sowing = formData.sowing.filter((m: string) => m !== month)
+                    }
+                  }}
+                  class="rounded"
+                />
+                <span class="text-sm">{month.slice(0, 3)}</span>
+              </label>
+            {/each}
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <span class="block text-sm font-medium">Transplanting Months</span>
+          <div class="grid grid-cols-3 gap-2">
+            {#each ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as month}
+              <label class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  value={month}
+                  checked={formData.transplanting.includes(month)}
+                  onchange={(e) => {
+                    const target = e.target as HTMLInputElement
+                    if (target.checked) {
+                      formData.transplanting = [...formData.transplanting, month]
+                    } else {
+                      formData.transplanting = formData.transplanting.filter(
+                        (m: string) => m !== month
+                      )
+                    }
+                  }}
+                  class="rounded"
+                />
+                <span class="text-sm">{month.slice(0, 3)}</span>
+              </label>
+            {/each}
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <label class="flex items-center gap-2">
+            <input type="checkbox" bind:checked={formData.direct_sowing} class="rounded" />
+            <span class="text-sm font-medium">Direct Sowing</span>
+          </label>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-4">
+          <button
+            type="button"
+            use:melt={$editSpeciesClose}
+            class="px-4 py-2 text-sm border rounded-md hover:bg-stone-100 dark:hover:bg-stone-700"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 disabled:opacity-50 disabled:hover:bg-lime-700"
+            disabled={!hasChanges}
+          >
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 {/if}
 

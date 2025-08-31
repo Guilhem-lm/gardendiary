@@ -18,7 +18,7 @@
 {#if mobile}
   <!-- Mobile bottom navigation -->
   <nav
-    class="sticky bottom-0 bg-white dark:bg-stone-800 border-t border-stone-200 dark:border-stone-700 md:hidden z-50"
+    class="sticky bottom-0 bg-white dark:bg-stone-800 border-t border-stone-200 dark:border-stone-700 md:hidden"
     style="bottom: env(safe-area-inset-bottom, 0px);"
   >
     <div class="flex justify-around items-center h-16">

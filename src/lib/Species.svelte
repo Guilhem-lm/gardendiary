@@ -7,12 +7,39 @@
   import AddSpecies from './AddSpecies.svelte'
   import SpeciesDetails from './SpeciesDetails.svelte'
   import type { Photo } from './utils/photos'
+  import { createDialog, melt } from '@melt-ui/svelte'
 
   let species = $state<Species[]>([])
   let loading = $state(true)
   let error = $state<string | null>(null)
   let selectedSpecies = $state<Species | null>(null)
   let unsubscribe: (() => void) | null = $state(null)
+
+  // Create dialog for SpeciesDetails
+  const {
+    elements: { content, overlay, portalled },
+    states: { open },
+  } = createDialog({
+    role: 'dialog',
+    preventScroll: true,
+    portal: '#app',
+  })
+
+  // Watch for selectedSpecies changes to open/close dialog
+  $effect(() => {
+    if (selectedSpecies) {
+      $open = true
+    } else {
+      $open = false
+    }
+  })
+
+  // Watch for dialog open state to clear selectedSpecies when closed
+  $effect(() => {
+    if (!$open) {
+      selectedSpecies = null
+    }
+  })
 
   async function fetchSpecies() {
     try {
@@ -191,6 +218,11 @@
   </div>
 </div>
 
-{#if selectedSpecies}
-  <SpeciesDetails species={selectedSpecies} onClose={() => (selectedSpecies = null)} />
+{#if $open && selectedSpecies}
+  <div use:melt={$portalled}>
+    <div use:melt={$overlay} class="hidden inset-0 bg-black/50 backdrop-blur-sm z-50"></div>
+    <div use:melt={$content} class="z-50">
+      <SpeciesDetails species={selectedSpecies} onClose={() => (selectedSpecies = null)} />
+    </div>
+  </div>
 {/if}
