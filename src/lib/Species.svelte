@@ -12,33 +12,7 @@
   let species = $state<Species[]>([])
   let loading = $state(true)
   let error = $state<string | null>(null)
-  let selectedSpecies = $state<Species | null>(null)
   let unsubscribe: (() => void) | null = $state(null)
-
-  // Create dialog for SpeciesDetails
-  const {
-    elements: { content, overlay, portalled },
-    states: { open },
-  } = createDialog({
-    role: 'dialog',
-    preventScroll: true,
-    portal: '#app',
-    onOpenChange: ({ next }) => {
-      if (!next) {
-        selectedSpecies = null
-      }
-      return next
-    },
-  })
-
-  // Watch for selectedSpecies changes to open/close dialog
-  $effect(() => {
-    if (selectedSpecies) {
-      $open = true
-    } else {
-      $open = false
-    }
-  })
 
   async function fetchSpecies() {
     try {
@@ -167,7 +141,7 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
             class="bg-white dark:bg-stone-700 rounded-lg shadow-sm p-6 cursor-pointer hover:shadow-md transition-shadow w-full text-left"
-            onclick={() => (selectedSpecies = specie)}
+            onclick={() => console.log('dbg', specie)}
           >
             <div class="flex gap-4">
               <!-- Thumbnail -->
@@ -216,12 +190,3 @@
     />
   </div>
 </div>
-
-{#if $open && selectedSpecies}
-  <div use:melt={$portalled}>
-    <div use:melt={$overlay} class="hidden inset-0 bg-black/50 backdrop-blur-sm z-50"></div>
-    <div use:melt={$content} class="z-50">
-      <SpeciesDetails species={selectedSpecies} onClose={() => (selectedSpecies = null)} />
-    </div>
-  </div>
-{/if}

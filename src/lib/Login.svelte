@@ -5,6 +5,7 @@
   import Species from './Species.svelte'
   import Navigation from './Navigation.svelte'
   import { toast } from './toast'
+  import SpeciesDetailDrawer from './SpeciesDetailDrawer.svelte'
 
   let currentView = $state<'containers' | 'species'>('containers')
 
@@ -30,6 +31,9 @@
   }
 
   let currentUser = $derived.by(getCurrentUser)
+  let speciesDetailDrawer: SpeciesDetailDrawer | null = $state(null)
+
+  //TODO: implement navigation to species detail drawer
 </script>
 
 <style>
@@ -53,6 +57,7 @@
     </div>
     <Navigation bind:currentView mobile />
   </div>
+  <SpeciesDetailDrawer bind:this={speciesDetailDrawer} />
 {:else}
   <div class="flex flex-col min-h-screen justify-center items-center">
     <div class="logo">
