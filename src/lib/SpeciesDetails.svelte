@@ -1,7 +1,7 @@
 <!-- SpeciesDetails.svelte -->
 <script lang="ts">
   import { fade, fly, scale } from 'svelte/transition'
-  import { ArrowLeft, Settings, EllipsisVertical, Trash2, X } from 'lucide-svelte'
+  import { ArrowLeft, Settings, EllipsisVertical, Trash2, X, Camera } from 'lucide-svelte'
   import type { Plant, Species } from './types'
   import { getCurrentUser, pb } from './pocketbase.svelte'
   import { toast } from './toast'
@@ -176,17 +176,17 @@
 >
   <!-- Header -->
   <div
-    class="bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12 py-2"
+    class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12 py-2 z-10"
   >
     <button
       onclick={onClose}
-      class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
+      class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100 px-2"
     >
       <ArrowLeft size={24} />
     </button>
 
-    <div class="flex gap-2 items-center">
-      <h1 class="text-2xl font-semibold">{species.name}</h1>
+    <div class="flex gap-2 items-center whitespace-nowrap shrink min-w-0">
+      <h1 class="text-2xl font-semibold truncate">{species.name}</h1>
     </div>
 
     <div class="flex gap-2 items-center">
@@ -194,7 +194,7 @@
         for="photo-upload"
         class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
       >
-        Add Photo
+        <Camera size={16} />
       </label>
       <input
         type="file"

@@ -1,7 +1,16 @@
 <!-- ContainerDetails.svelte -->
 <script lang="ts">
   import { fade, fly, scale } from 'svelte/transition'
-  import { ArrowLeft, Droplets, Settings, X, Plus, EllipsisVertical, Trash2 } from 'lucide-svelte'
+  import {
+    ArrowLeft,
+    Droplets,
+    Settings,
+    X,
+    Plus,
+    EllipsisVertical,
+    Trash2,
+    Camera,
+  } from 'lucide-svelte'
   import type { Container, Species } from './types'
   import { getCurrentUser, pb } from './pocketbase.svelte'
   import { toast } from './toast'
@@ -277,7 +286,7 @@
 >
   <!-- Header -->
   <div
-    class="bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12"
+    class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12 z-10"
   >
     <button
       onclick={onClose}
@@ -286,8 +295,8 @@
       <ArrowLeft size={24} />
     </button>
 
-    <div class="flex gap-2 items-center">
-      <h1 class="text-2xl font-semibold">{container.name}</h1>
+    <div class="flex gap-2 items-center shrink min-w-0">
+      <h1 class="text-2xl font-semibold truncate whitespace-nowrap">{container.name}</h1>
     </div>
 
     <div class="flex gap-2">
@@ -295,7 +304,7 @@
         for="photo-upload"
         class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
       >
-        Add Photo
+        <Camera size={16} />
       </label>
       <input
         type="file"
