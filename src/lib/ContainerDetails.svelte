@@ -1,7 +1,16 @@
 <!-- ContainerDetails.svelte -->
 <script lang="ts">
   import { fade, scale } from 'svelte/transition'
-  import { Droplets, Settings, X, Plus, EllipsisVertical, Trash2, Camera } from 'lucide-svelte'
+  import {
+    Droplets,
+    Settings,
+    X,
+    Plus,
+    EllipsisVertical,
+    Trash2,
+    Camera,
+    Bean,
+  } from 'lucide-svelte'
   import type { Container, Species } from './types'
   import { getCurrentUser, pb } from './pocketbase.svelte'
   import { toast } from './toast'
@@ -114,7 +123,85 @@
     }
   }
 
-  let deletingPlantId = $state<string | null>(null)
+  let selectedPlantId = $state<string | null>(null)
+
+  // Plant actions dropdown
+  const {
+    elements: {
+      trigger: plantActionsTrigger,
+      menu: plantActionsMenu,
+      overlay: plantActionsOverlay,
+      item: plantActionsItem,
+    },
+    states: { open: plantActionsOpen },
+  } = createDropdownMenu({
+    positioning: {
+      placement: 'bottom-end',
+    },
+    preventScroll: true,
+    loop: true,
+  })
+
+  // Edit plant dialog
+  const {
+    elements: {
+      trigger: editPlantTrigger,
+      content: editPlantContent,
+      overlay: editPlantOverlay,
+      close: editPlantClose,
+    },
+    states: { open: editPlantOpen },
+  } = createDialog({
+    role: 'dialog',
+    preventScroll: true,
+    onOpenChange: ({ next }) => {
+      if (next && selectedPlantId) {
+        const plant = container?.expand?.plants.find((p) => p.id === selectedPlantId)
+        if (plant) {
+          plantFormData = {
+            quantity: plant.quantity,
+            sown_at: plant.sown_at ? new Date(plant.sown_at).toISOString().slice(0, 16) : '',
+            transplanted_at: plant.transplanted_at
+              ? new Date(plant.transplanted_at).toISOString().slice(0, 16)
+              : '',
+            harvested_at: plant.harvested_at
+              ? new Date(plant.harvested_at).toISOString().slice(0, 16)
+              : '',
+            position: plant.position || '',
+          }
+        }
+      }
+      return next
+    },
+  })
+
+  // Plant form state
+  let plantFormData = $state({
+    quantity: 1,
+    sown_at: '',
+    transplanted_at: '',
+    harvested_at: '',
+    position: '',
+  })
+
+  async function savePlantChanges() {
+    try {
+      if (!selectedPlantId) return
+      await pb.collection('plants').update(selectedPlantId, plantFormData)
+
+      // Refresh container to get updated plants
+      const updated = await pb.collection('containers').getOne<Container>(container!.id, {
+        expand: 'plants.species',
+      })
+      Object.assign(container!, updated)
+
+      $editPlantOpen = false
+      toast('Plant updated successfully', { type: 'success' })
+    } catch (error) {
+      console.error('Error updating plant:', error)
+      toast('Failed to update plant', { type: 'error' })
+    }
+  }
 
   // Delete plant dialog
   const {
@@ -157,7 +244,7 @@
       console.error('Error deleting plant:', error)
       toast('Failed to delete plant', { type: 'error' })
     } finally {
-      deletingPlantId = null
+      selectedPlantId = null
       $deletePlantOpen = false
     }
   }
@@ -480,35 +567,78 @@
       {#if !container.expand?.plants || container.expand.plants.length === 0}
         <p class="text-stone-500 dark:text-stone-400">No plants in this container yet.</p>
       {:else}
-        <div class="grid gap-3">
-          {#each container.expand.plants as plant}
-            <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm">
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                  <a href={`#/species?speciesId=${plant.expand?.species.id}`} class="font-medium"
-                    >{plant.expand?.species.name}</a
-                  >
-                  <div class="flex items-center gap-1">
-                    <p class="text-sm text-stone-500 dark:text-stone-400">
-                      {plant.quantity || 1} plants
-                    </p>
-                  </div>
+        {#each container.expand.plants as plant}
+          <div
+            class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm flex justify-between gap-x-3 items-start"
+          >
+            <div class="flex items-center gap-x-3 flex-wrap gap-y-1">
+              <div class="flex items-center gap-2 flex-nowrap">
+                <a
+                  href={`#/species?speciesId=${plant.expand?.species.id}`}
+                  class="font-medium whitespace-nowrap">{plant.expand?.species.name}</a
+                >
+                <div class="flex items-center gap-1">
+                  <p class="text-sm text-stone-500 dark:text-stone-400">
+                    {`(${plant.quantity || 1})`}
+                  </p>
                 </div>
-                <DaysToHarvest {plant} />
+              </div>
+              {#if plant.sown_at}
+                <div class="flex items-center gap-1 text-stone-500 dark:text-stone-400">
+                  <Bean size={14} />
+                  <span class="text-sm">
+                    {new Date(plant.sown_at).toLocaleDateString()}
+                  </span>
+                </div>
+              {/if}
+            </div>
+
+            <div class="flex items-center gap-3">
+              <DaysToHarvest {plant} />
+              <button
+                use:melt={$plantActionsTrigger}
+                class="text-stone-400 hover:text-stone-600 dark:hover:text-stone-300"
+                aria-label="Plant actions"
+                onclick={() => {
+                  selectedPlantId = plant.id
+                }}
+              >
+                <EllipsisVertical size={16} />
+              </button>
+            </div>
+
+            {#if $plantActionsOpen && selectedPlantId === plant.id}
+              <div
+                use:melt={$plantActionsOverlay}
+                class="fixed inset-0 z-[300]"
+                transition:fade={{ duration: 100 }}
+              ></div>
+
+              <div
+                use:melt={$plantActionsMenu}
+                class="absolute right-0 mt-1 w-36 bg-white dark:bg-stone-800 rounded-lg shadow-lg py-1 z-[301]"
+                transition:scale={{ duration: 150, start: 0.95 }}
+              >
                 <button
+                  use:melt={$plantActionsItem}
+                  use:melt={$editPlantTrigger}
+                  class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
+                >
+                  <Settings size={16} />
+                  Edit
+                </button>
+                <button
+                  use:melt={$plantActionsItem}
                   use:melt={$deletePlantTrigger}
-                  onclick={() => {
-                    deletingPlantId = plant.id
-                  }}
-                  class="text-stone-400 hover:text-red-600 sm:opacity-60 sm:hover:opacity-100"
-                  aria-label="Delete plant"
+                  class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700"
                 >
                   <Trash2 size={16} />
+                  Delete
                 </button>
               </div>
-            </div>
-          {/each}
-        </div>
+            {/if}
+          </div>
+        {/each}
       {/if}
     </div>
   {:else}
@@ -639,6 +769,102 @@
   </div>
 {/if}
 
+{#if $editPlantOpen && selectedPlantId}
+  <div
+    use:melt={$editPlantOverlay}
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[300]"
+    transition:fade={{ duration: 150 }}
+  ></div>
+
+  <div
+    use:melt={$editPlantContent}
+    class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[301]"
+    transition:scale={{ duration: 150, start: 0.95 }}
+  >
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-semibold">Edit Plant</h2>
+      <button use:melt={$editPlantClose} class="text-stone-400 hover:text-stone-600">
+        <X size={20} />
+      </button>
+    </div>
+
+    <form
+      onsubmit={(e) => {
+        e.preventDefault()
+        savePlantChanges()
+      }}
+      class="mt-4 space-y-4"
+    >
+      <div class="space-y-2">
+        <label for="quantity" class="block text-sm font-medium">Quantity</label>
+        <input
+          type="number"
+          id="quantity"
+          bind:value={plantFormData.quantity}
+          min="1"
+          class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+        />
+      </div>
+
+      <div class="space-y-2">
+        <label for="sown_at" class="block text-sm font-medium">Sowing Date</label>
+        <input
+          type="datetime-local"
+          id="sown_at"
+          bind:value={plantFormData.sown_at}
+          class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+        />
+      </div>
+
+      <div class="space-y-2">
+        <label for="transplanted_at" class="block text-sm font-medium">Transplanting Date</label>
+        <input
+          type="datetime-local"
+          id="transplanted_at"
+          bind:value={plantFormData.transplanted_at}
+          class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+        />
+      </div>
+
+      <div class="space-y-2">
+        <label for="harvested_at" class="block text-sm font-medium">Harvest Date</label>
+        <input
+          type="datetime-local"
+          id="harvested_at"
+          bind:value={plantFormData.harvested_at}
+          class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+        />
+      </div>
+
+      <div class="space-y-2">
+        <label for="position" class="block text-sm font-medium">Position</label>
+        <input
+          type="text"
+          id="position"
+          bind:value={plantFormData.position}
+          class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+        />
+      </div>
+
+      <div class="flex justify-end gap-2 pt-4">
+        <button
+          type="button"
+          use:melt={$editPlantClose}
+          class="px-4 py-2 text-sm border rounded-md hover:bg-stone-100 dark:hover:bg-stone-700"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800"
+        >
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+{/if}
+
 {#if $deletePlantOpen}
   <div
     use:melt={$deletePlantOverlay}
@@ -670,8 +896,8 @@
       <button
         class="px-4 py-2 text-sm bg-red-600 text-white rounded-md hover:bg-red-700"
         onclick={() => {
-          if (deletingPlantId) {
-            deletePlant(deletingPlantId)
+          if (selectedPlantId) {
+            deletePlant(selectedPlantId)
           }
         }}
       >
