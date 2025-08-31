@@ -29,6 +29,9 @@
         sort: '-created',
         expand: 'photos_via_species',
       })
+      if (selectedSpeciesId) {
+        speciesDetailDrawer?.openSpecies(species.find((s) => s.id === selectedSpeciesId)!)
+      }
     } catch (err) {
       error = 'Failed to load species'
       toast('Failed to load species', { type: 'error' })

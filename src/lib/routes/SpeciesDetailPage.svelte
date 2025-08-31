@@ -36,6 +36,8 @@
   $effect(() => {
     if (speciesId) {
       untrack(() => fetchSpecies(speciesId))
+    } else {
+      error = 'No species ID provided'
     }
   })
 </script>
@@ -44,8 +46,6 @@
   <p>Loading...</p>
 {:else if error}
   <p>{error}</p>
-{:else}
-  <p>No species ID provided</p>
 {/if}
 
 <SpeciesDetailDrawer bind:this={speciesDetailDrawer} />
