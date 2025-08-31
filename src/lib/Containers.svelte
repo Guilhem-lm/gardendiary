@@ -9,6 +9,7 @@
   import type { Container } from './types'
   import { getMostRecentPhoto, type Photo } from './utils/photos'
   import { push } from 'svelte-spa-router'
+  import DaysToHarvest from './DaysToHarvest.svelte'
 
   interface Props {
     selectedContainerId: string | null
@@ -192,54 +193,30 @@
               </div>
 
               <!-- Content -->
-              <div class="flex flex-col gap-1.5 flex-1 min-w-0">
+              <div class="flex flex-col gap-2 flex-1 min-w-0 max-h-16 h-fit">
                 <!-- Header row -->
-                <div class="flex justify-between items-start">
-                  <div class="flex flex-row gap-2 items-baseline flex-wrap">
-                    <h2 class="text-lg font-semibold">{container.name}</h2>
 
-                    {#if getContainerPlants(container).length > 0}
-                      <div class="mt-1 flex flex-wrap gap-1.5">
-                        {#each getContainerPlants(container) as plant}
-                          <div class="bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded text-sm">
-                            {#if plant.quantity > 1}
-                              {plant.quantity}
-                            {/if}
-                            {plant.species}
-                          </div>
-                        {/each}
+                <div class="flex flex-row gap-3 items-center flex-wrap">
+                  <h2 class="text-lg font-semibold">{container.name}</h2>
+
+                  {#if getContainerPlants(container).length > 0}
+                    {#each getContainerPlants(container) as plant}
+                      <div class="bg-stone-100 dark:bg-stone-600 px-2 py-0.5 rounded text-sm">
+                        {#if plant.quantity > 1}
+                          {plant.quantity}
+                        {/if}
+                        {plant.species}
                       </div>
-                    {/if}
-                  </div>
+                    {/each}
+                  {/if}
+
+                  <DaysToHarvest {container} />
                 </div>
 
                 <!-- Details row -->
-                <div
-                  class="gap-4 text-sm text-stone-500 dark:text-stone-400 mt-2 dark:border-stone-600 pt-2 hidden md:flex"
-                >
+                <div class="gap-4 text-sm text-stone-500 dark:text-stone-400 hidden md:flex">
                   <p><span class="font-medium">Location:</span> {container.location}</p>
                   <p><span class="font-medium">Size:</span> {container.size}</p>
-                  <div class="flex items-center gap-1">
-                    <p>
-                      <span class="font-medium">Last Watered:</span>
-                      {container.last_watered
-                        ? new Date(container.last_watered).toLocaleDateString()
-                        : '-'}
-                    </p>
-                    <button
-                      type="button"
-                      class="text-stone-400 hover:text-lime-700 dark:text-stone-500 dark:hover:text-lime-700"
-                      onclick={async (e) => {
-                        e.stopPropagation()
-                        await pb.collection('containers').update(container.id, {
-                          last_watered: new Date().toISOString(),
-                        })
-                        toast('Plants watered successfully', { type: 'success' })
-                      }}
-                    >
-                      <Droplets size={14} />
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>

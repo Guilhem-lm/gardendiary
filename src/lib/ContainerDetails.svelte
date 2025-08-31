@@ -10,6 +10,7 @@
   import { getTotalPlantsCount } from './utils/container'
   import DrawerOrPage from './components/DrawerOrPage.svelte'
   import { tick } from 'svelte'
+  import DaysToHarvest from './DaysToHarvest.svelte'
 
   let container: Container | null = $state(null)
 
@@ -369,30 +370,33 @@
       <div
         class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-700 rounded-lg p-4 md:grow min-w-0 md:h-96 shadow-sm"
       >
-        <div class="flex flex-col gap-2">
-          <div class="flex items-center gap-2">
-            <span class="font-medium">Location:</span>
-            <p class="flex-1">{container.location}</p>
-          </div>
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+              <span class="font-medium">Location:</span>
+              <p class="flex-1">{container.location}</p>
+            </div>
 
-          <div class="flex items-center gap-2">
-            <span class="font-medium">Size:</span>
-            <p class="flex-1">{container.size}</p>
-          </div>
+            <div class="flex items-center gap-2">
+              <span class="font-medium">Size:</span>
+              <p class="flex-1">{container.size}</p>
+            </div>
 
-          <div class="flex items-center gap-2">
-            <p>
-              <span class="font-medium">Last Watered:</span>
-              {formatDate(container.last_watered)}
-            </p>
-            <button
-              type="button"
-              class="text-stone-400 hover:text-lime-700 dark:text-stone-500 dark:hover:text-lime-700"
-              onclick={waterPlants}
-            >
-              <Droplets size={16} />
-            </button>
+            <div class="flex items-center gap-2">
+              <p>
+                <span class="font-medium">Last Watered:</span>
+                {formatDate(container.last_watered)}
+              </p>
+              <button
+                type="button"
+                class="text-stone-400 hover:text-lime-700 dark:text-stone-500 dark:hover:text-lime-700"
+                onclick={waterPlants}
+              >
+                <Droplets size={16} />
+              </button>
+            </div>
           </div>
+          <!-- Removed container-wide indicator per requirement; per-plant indicators shown below -->
         </div>
       </div>
     </div>
@@ -479,8 +483,8 @@
         <div class="grid gap-3">
           {#each container.expand.plants as plant}
             <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm">
-              <div class="flex items-baseline justify-between">
-                <div class="flex items-baseline gap-2">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
                   <a href={`#/species?speciesId=${plant.expand?.species.id}`} class="font-medium"
                     >{plant.expand?.species.name}</a
                   >
@@ -490,6 +494,7 @@
                     </p>
                   </div>
                 </div>
+                <DaysToHarvest {plant} />
                 <button
                   use:melt={$deletePlantTrigger}
                   onclick={() => {

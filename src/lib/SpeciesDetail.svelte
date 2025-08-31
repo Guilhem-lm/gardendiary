@@ -164,7 +164,7 @@
   }
 
   export async function openSpecies(newSpecies: Species, isPage?: boolean) {
-    if (!newSpecies) return
+    if (!newSpecies || !newSpecies.id) return
     species = $state.snapshot(newSpecies)
     if (isPage) {
       drawer?.openPage()
@@ -445,13 +445,13 @@
                 <input
                   type="checkbox"
                   value={month}
-                  checked={formData.sowing.includes(month)}
+                  checked={formData!.sowing!.includes(month)}
                   onchange={(e) => {
                     const target = e.target as HTMLInputElement
                     if (target.checked) {
-                      formData!.sowing = [...formData!.sowing, month]
+                      formData!.sowing = [...formData!.sowing!, month]
                     } else {
-                      formData!.sowing = formData!.sowing.filter((m: string) => m !== month)
+                      formData!.sowing = formData!.sowing!.filter((m: string) => m !== month)
                     }
                   }}
                   class="rounded"
@@ -470,13 +470,13 @@
                 <input
                   type="checkbox"
                   value={month}
-                  checked={formData.transplanting.includes(month)}
+                  checked={formData!.transplanting!.includes(month)}
                   onchange={(e) => {
                     const target = e.target as HTMLInputElement
                     if (target.checked) {
-                      formData!.transplanting = [...formData!.transplanting, month]
+                      formData!.transplanting = [...formData!.transplanting!, month]
                     } else {
-                      formData!.transplanting = formData!.transplanting.filter(
+                      formData!.transplanting = formData!.transplanting!.filter(
                         (m: string) => m !== month
                       )
                     }
