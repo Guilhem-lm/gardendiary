@@ -191,7 +191,7 @@
 
     <div
       use:melt={$content}
-      class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] bg-white dark:bg-stone-800 rounded-none sm:rounded-lg shadow-lg p-4 sm:p-6 w-full h-full sm:w-[430px] sm:h-auto sm:max-h-[90vh] overflow-y-auto"
+      class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[301] max-h-[90vh] overflow-y-auto"
       transition:scale={{ start: 0.95, duration: 150 }}
     >
       <h2 use:melt={$title} class="text-xl font-semibold mb-4">Add New Container</h2>

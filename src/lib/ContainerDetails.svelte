@@ -160,12 +160,12 @@
         if (plant) {
           plantFormData = {
             quantity: plant.quantity,
-            sown_at: plant.sown_at ? new Date(plant.sown_at).toISOString().slice(0, 16) : '',
+            sown_at: plant.sown_at ? new Date(plant.sown_at).toISOString().slice(0, 10) : '',
             transplanted_at: plant.transplanted_at
-              ? new Date(plant.transplanted_at).toISOString().slice(0, 16)
+              ? new Date(plant.transplanted_at).toISOString().slice(0, 10)
               : '',
             harvested_at: plant.harvested_at
-              ? new Date(plant.harvested_at).toISOString().slice(0, 16)
+              ? new Date(plant.harvested_at).toISOString().slice(0, 10)
               : '',
             position: plant.position || '',
           }
@@ -187,7 +187,20 @@
   async function savePlantChanges() {
     try {
       if (!selectedPlantId) return
-      await pb.collection('plants').update(selectedPlantId, plantFormData)
+
+      // Add time to dates to make them valid ISO strings
+      const formattedData = {
+        ...plantFormData,
+        sown_at: plantFormData.sown_at ? `${plantFormData.sown_at}T12:00:00.000Z` : '',
+        transplanted_at: plantFormData.transplanted_at
+          ? `${plantFormData.transplanted_at}T12:00:00.000Z`
+          : '',
+        harvested_at: plantFormData.harvested_at
+          ? `${plantFormData.harvested_at}T12:00:00.000Z`
+          : '',
+      }
+
+      await pb.collection('plants').update(selectedPlantId, formattedData)
 
       // Refresh container to get updated plants
       const updated = await pb.collection('containers').getOne<Container>(container!.id, {
@@ -778,7 +791,7 @@
 
   <div
     use:melt={$editPlantContent}
-    class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[301]"
+    class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[301] max-h-[90vh] overflow-y-auto"
     transition:scale={{ duration: 150, start: 0.95 }}
   >
     <div class="flex items-center justify-between">
@@ -809,7 +822,7 @@
       <div class="space-y-2">
         <label for="sown_at" class="block text-sm font-medium">Sowing Date</label>
         <input
-          type="datetime-local"
+          type="date"
           id="sown_at"
           bind:value={plantFormData.sown_at}
           class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
@@ -819,7 +832,7 @@
       <div class="space-y-2">
         <label for="transplanted_at" class="block text-sm font-medium">Transplanting Date</label>
         <input
-          type="datetime-local"
+          type="date"
           id="transplanted_at"
           bind:value={plantFormData.transplanted_at}
           class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
@@ -829,7 +842,7 @@
       <div class="space-y-2">
         <label for="harvested_at" class="block text-sm font-medium">Harvest Date</label>
         <input
-          type="datetime-local"
+          type="date"
           id="harvested_at"
           bind:value={plantFormData.harvested_at}
           class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
