@@ -1,29 +1,17 @@
 <!-- ContainerDetails.svelte -->
 <script lang="ts">
-  import { fade, fly, scale } from 'svelte/transition'
-  import {
-    ArrowLeft,
-    Droplets,
-    Settings,
-    X,
-    Plus,
-    EllipsisVertical,
-    Trash2,
-    Camera,
-  } from 'lucide-svelte'
+  import { fade, scale } from 'svelte/transition'
+  import { Droplets, Settings, X, Plus, EllipsisVertical, Trash2, Camera } from 'lucide-svelte'
   import type { Container, Species } from './types'
   import { getCurrentUser, pb } from './pocketbase.svelte'
   import { toast } from './toast'
   import { createDialog, createDropdownMenu, melt } from '@melt-ui/svelte'
   import PhotoCarousel from './PhotoCarousel.svelte'
   import { getTotalPlantsCount } from './utils/container'
+  import DrawerOrPage from './components/DrawerOrPage.svelte'
+  import { tick } from 'svelte'
 
-  interface Props {
-    container: Container
-    onClose: () => void
-  }
-
-  const { container, onClose }: Props = $props()
+  let container: Container | null = $state(null)
 
   // Container actions dropdown
   const {
@@ -60,9 +48,10 @@
 
   async function deleteContainer() {
     try {
+      if (!container) return
       await pb.collection('containers').delete(container.id)
       toast('Container deleted successfully', { type: 'success' })
-      onClose()
+      history.back()
     } catch (error) {
       console.error('Error deleting container:', error)
       toast('Failed to delete container', { type: 'error' })
@@ -81,23 +70,35 @@
   } = createDialog({
     role: 'dialog',
     preventScroll: true,
+    onOpenChange: ({ next }) => {
+      if (next && container) {
+        formData.name = container.name
+        formData.location = container.location
+        formData.size = container.size
+      }
+      return next
+    },
   })
 
   // Form state
   let formData = $state({
-    name: container.name,
-    location: container.location,
-    size: container.size,
+    name: '',
+    location: '',
+    size: '',
   })
 
-  let hasChanges = $derived(
-    formData.name !== container.name ||
+  let hasChanges = $derived.by(() => {
+    if (!container) return false
+    return (
+      formData.name !== container.name ||
       formData.location !== container.location ||
       formData.size !== container.size
-  )
+    )
+  })
 
   async function saveContainerChanges() {
     try {
+      if (!container) return
       await pb.collection('containers').update(container.id, formData)
 
       // Refresh container
@@ -132,6 +133,7 @@
 
   async function deletePlant(plantId: string) {
     try {
+      if (!container) return
       // Delete the plant
       await pb.collection('plants').delete(plantId)
 
@@ -183,6 +185,7 @@
   }
 
   async function addPlant() {
+    if (!container) return
     if (!newPlantSpecies) {
       toast('Please select a species', { type: 'error' })
       return
@@ -241,6 +244,7 @@
 
   async function waterPlants() {
     try {
+      if (!container) return
       await pb.collection('containers').update(container.id, {
         last_watered: new Date().toISOString(),
       })
@@ -256,6 +260,7 @@
     if (!file) return
 
     try {
+      if (!container) return
       const formData = new FormData()
       formData.append('file', file)
       formData.append('container', container.id)
@@ -278,28 +283,26 @@
   }
 
   let photoCarousel: PhotoCarousel | undefined = $state(undefined)
+  let drawer: DrawerOrPage | undefined = $state(undefined)
+
+  export async function openContainer(newContainer: Container, isPage?: boolean) {
+    container = $state.snapshot(newContainer)
+    if (isPage) {
+      drawer?.openPage()
+    } else {
+      drawer?.openDrawer()
+    }
+    await tick()
+  }
+
+  export function closeDrawer() {
+    drawer?.closeDrawer()
+  }
 </script>
 
-<div
-  class="fixed inset-0 bg-stone-100 dark:bg-stone-800 z-[200] overflow-y-auto h-screen"
-  transition:fly={{ x: '-100%', duration: 150 }}
->
-  <!-- Header -->
-  <div
-    class="sticky top-0 bg-stone-50 dark:bg-stone-900 border-stone-200 dark:border-stone-700 flex items-center justify-between px-4 h-12 z-10"
-  >
-    <button
-      onclick={onClose}
-      class="text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-stone-100"
-    >
-      <ArrowLeft size={24} />
-    </button>
-
-    <div class="flex gap-2 items-center shrink min-w-0">
-      <h1 class="text-2xl font-semibold truncate whitespace-nowrap">{container.name}</h1>
-    </div>
-
-    <div class="flex gap-2">
+{#snippet actions()}
+  {#if container}
+    <div class="flex gap-2 items-center">
       <label
         for="photo-upload"
         class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800 cursor-pointer"
@@ -321,193 +324,194 @@
       >
         <EllipsisVertical size={20} />
       </button>
+    </div>
 
-      {#if $containerActionsOpen}
+    {#if $containerActionsOpen}
+      <div
+        use:melt={$containerActionsOverlay}
+        class="fixed inset-0 z-[300]"
+        transition:fade={{ duration: 100 }}
+      ></div>
+
+      <div
+        use:melt={$containerActionsMenu}
+        class="absolute right-0 mt-1 w-36 bg-white dark:bg-stone-800 rounded-lg shadow-lg py-1 z-[301]"
+        transition:scale={{ duration: 150, start: 0.95 }}
+      >
+        <button
+          use:melt={$containerActionsItem}
+          use:melt={$editContainerTrigger}
+          class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
+        >
+          <Settings size={16} />
+          Edit
+        </button>
+        <button
+          use:melt={$containerActionsItem}
+          use:melt={$deleteContainerTrigger}
+          class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700"
+        >
+          <Trash2 size={16} />
+          Delete
+        </button>
+      </div>
+    {/if}
+  {/if}
+{/snippet}
+
+{#snippet content()}
+  {#if container}
+    <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
+      <!-- Container Photo Section -->
+      <PhotoCarousel containerId={container.id} bind:this={photoCarousel} />
+
+      <!-- Container Details -->
+      <div
+        class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-700 rounded-lg p-4 md:grow min-w-0 md:h-96 shadow-sm"
+      >
+        <div class="flex flex-col gap-2">
+          <div class="flex items-center gap-2">
+            <span class="font-medium">Location:</span>
+            <p class="flex-1">{container.location}</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <span class="font-medium">Size:</span>
+            <p class="flex-1">{container.size}</p>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <p>
+              <span class="font-medium">Last Watered:</span>
+              {formatDate(container.last_watered)}
+            </p>
+            <button
+              type="button"
+              class="text-stone-400 hover:text-lime-700 dark:text-stone-500 dark:hover:text-lime-700"
+              onclick={waterPlants}
+            >
+              <Droplets size={16} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Plants List -->
+    <div class="w-full mt-2">
+      <div class="flex items-center gap-2 mb-3">
+        <h2 class="text-lg font-semibold">Plants ({getTotalPlantsCount(container)})</h2>
+        <button
+          use:melt={$addPlantTrigger}
+          class="text-stone-400 hover:text-lime-700 dark:text-stone-500 dark:hover:text-lime-700"
+          aria-label="Add plant"
+        >
+          <Plus size={16} />
+        </button>
+      </div>
+
+      {#if $addPlantOpen}
         <div
-          use:melt={$containerActionsOverlay}
-          class="fixed inset-0 z-[300]"
-          transition:fade={{ duration: 100 }}
+          use:melt={$addPlantOverlay}
+          class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+          transition:fade={{ duration: 150 }}
         ></div>
 
         <div
-          use:melt={$containerActionsMenu}
-          class="absolute right-0 mt-1 w-36 bg-white dark:bg-stone-800 rounded-lg shadow-lg py-1 z-[301]"
+          use:melt={$addPlantContent}
+          class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[51]"
           transition:scale={{ duration: 150, start: 0.95 }}
         >
-          <button
-            use:melt={$containerActionsItem}
-            use:melt={$editContainerTrigger}
-            class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-700"
+          <h2 class="text-lg font-semibold mb-4">Add Plant</h2>
+
+          <form
+            onsubmit={(e) => {
+              e.preventDefault()
+              addPlant()
+            }}
+            class="space-y-4"
           >
-            <Settings size={16} />
-            Edit
-          </button>
-          <button
-            use:melt={$containerActionsItem}
-            use:melt={$deleteContainerTrigger}
-            class="w-full px-3 py-2 text-left text-sm flex items-center gap-2 text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700"
-          >
-            <Trash2 size={16} />
-            Delete
-          </button>
+            <div class="space-y-2">
+              <label for="species" class="block text-sm font-medium">Species</label>
+              <select
+                id="species"
+                bind:value={newPlantSpecies}
+                class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+              >
+                <option value="">Select a species</option>
+                {#each species as s}
+                  <option value={s.id}>{s.name}</option>
+                {/each}
+              </select>
+            </div>
+
+            <div class="space-y-2">
+              <label for="quantity" class="block text-sm font-medium">Quantity</label>
+              <input
+                type="number"
+                id="quantity"
+                bind:value={newPlantQuantity}
+                min="1"
+                class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
+              />
+            </div>
+
+            <div class="flex justify-end gap-2 pt-4">
+              <button
+                type="button"
+                onclick={() => ($addPlantOpen = false)}
+                class="px-4 py-2 text-sm border rounded-md hover:bg-stone-100 dark:hover:bg-stone-700"
+                >Cancel</button
+              >
+              <button
+                type="submit"
+                class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800"
+                >Add Plant</button
+              >
+            </div>
+          </form>
+        </div>
+      {/if}
+
+      {#if !container.expand?.plants || container.expand.plants.length === 0}
+        <p class="text-stone-500 dark:text-stone-400">No plants in this container yet.</p>
+      {:else}
+        <div class="grid gap-3">
+          {#each container.expand.plants as plant}
+            <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm">
+              <div class="flex items-baseline justify-between">
+                <div class="flex items-baseline gap-2">
+                  <a href={`#/species?speciesId=${plant.expand?.species.id}`} class="font-medium"
+                    >{plant.expand?.species.name}</a
+                  >
+                  <div class="flex items-center gap-1">
+                    <p class="text-sm text-stone-500 dark:text-stone-400">
+                      {plant.quantity || 1} plants
+                    </p>
+                  </div>
+                </div>
+                <button
+                  use:melt={$deletePlantTrigger}
+                  onclick={() => {
+                    deletingPlantId = plant.id
+                  }}
+                  class="text-stone-400 hover:text-red-600 sm:opacity-60 sm:hover:opacity-100"
+                  aria-label="Delete plant"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          {/each}
         </div>
       {/if}
     </div>
-  </div>
+  {:else}
+    <p class="text-stone-500 dark:text-stone-400">Loading container...</p>
+  {/if}
+{/snippet}
 
-  <!-- Content -->
-  <div class="max-w-4xl mx-auto pb-4">
-    <div class="p-4 flex flex-col gap-4">
-      <div class="flex flex-col md:flex-row md:items-start md:justify-start gap-4">
-        <!-- Container Photo Section -->
-        <PhotoCarousel containerId={container.id} bind:this={photoCarousel} />
-
-        <!-- Container Details -->
-        <div
-          class="flex flex-col gap-3 text-sm text-stone-500 dark:text-stone-400 bg-white dark:bg-stone-700 rounded-lg p-4 md:grow min-w-0 md:h-96 shadow-sm"
-        >
-          <div class="flex flex-col gap-2">
-            <!-- Location -->
-            <div class="flex items-center gap-2">
-              <span class="font-medium">Location:</span>
-              <p class="flex-1">{container.location}</p>
-            </div>
-
-            <!-- Size -->
-            <div class="flex items-center gap-2">
-              <span class="font-medium">Size:</span>
-              <p class="flex-1">{container.size}</p>
-            </div>
-
-            <div class="flex items-center gap-2">
-              <p>
-                <span class="font-medium">Last Watered:</span>
-                {formatDate(container.last_watered)}
-              </p>
-              <button
-                type="button"
-                class="text-stone-400 hover:text-lime-700 dark:text-stone-500 dark:hover:text-lime-700"
-                onclick={waterPlants}
-              >
-                <Droplets size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <!-- Plants List -->
-      <div class="w-full mt-2">
-        <div class="flex items-center gap-2 mb-3">
-          <h2 class="text-lg font-semibold">Plants ({getTotalPlantsCount(container)})</h2>
-          <button
-            use:melt={$addPlantTrigger}
-            class="text-stone-400 hover:text-lime-700 dark:text-stone-500 dark:hover:text-lime-700"
-            aria-label="Add plant"
-          >
-            <Plus size={16} />
-          </button>
-        </div>
-
-        {#if $addPlantOpen}
-          <div
-            use:melt={$addPlantOverlay}
-            class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-            transition:fade={{ duration: 150 }}
-          ></div>
-
-          <div
-            use:melt={$addPlantContent}
-            class="fixed left-[50%] top-[50%] -translate-x-[50%] -translate-y-[50%] w-[90vw] max-w-[400px] bg-white dark:bg-stone-800 rounded-lg shadow-lg p-6 z-[51]"
-            transition:scale={{ duration: 150, start: 0.95 }}
-          >
-            <h2 class="text-lg font-semibold mb-4">Add Plant</h2>
-
-            <form
-              onsubmit={(e) => {
-                e.preventDefault()
-                addPlant()
-              }}
-              class="space-y-4"
-            >
-              <div class="space-y-2">
-                <label for="species" class="block text-sm font-medium">Species</label>
-                <select
-                  id="species"
-                  bind:value={newPlantSpecies}
-                  class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
-                >
-                  <option value="">Select a species</option>
-                  {#each species as s}
-                    <option value={s.id}>{s.name}</option>
-                  {/each}
-                </select>
-              </div>
-
-              <div class="space-y-2">
-                <label for="quantity" class="block text-sm font-medium">Quantity</label>
-                <input
-                  type="number"
-                  id="quantity"
-                  bind:value={newPlantQuantity}
-                  min="1"
-                  class="w-full px-3 py-2 border rounded-md dark:bg-stone-700"
-                />
-              </div>
-
-              <div class="flex justify-end gap-2 pt-4">
-                <button
-                  type="button"
-                  onclick={() => ($addPlantOpen = false)}
-                  class="px-4 py-2 text-sm border rounded-md hover:bg-stone-100 dark:hover:bg-stone-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  class="px-4 py-2 text-sm bg-lime-700 text-white rounded-md hover:bg-lime-800"
-                >
-                  Add Plant
-                </button>
-              </div>
-            </form>
-          </div>
-        {/if}
-        {#if !container.expand?.plants || container.expand.plants.length === 0}
-          <p class="text-stone-500 dark:text-stone-400">No plants in this container yet.</p>
-        {:else}
-          <div class="grid gap-3">
-            {#each container.expand.plants as plant}
-              <div class="bg-white dark:bg-stone-700 rounded-lg p-4 shadow-sm">
-                <div class="flex items-baseline justify-between">
-                  <div class="flex items-baseline gap-2">
-                    <a href={`#/species?speciesId=${plant.expand?.species.id}`} class="font-medium">
-                      {plant.expand?.species.name}
-                    </a>
-                    <div class="flex items-center gap-1">
-                      <p class="text-sm text-stone-500 dark:text-stone-400">
-                        {plant.quantity || 1} plants
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    use:melt={$deletePlantTrigger}
-                    onclick={() => {
-                      deletingPlantId = plant.id
-                    }}
-                    class="text-stone-400 hover:text-red-600 sm:opacity-60 sm:hover:opacity-100"
-                    aria-label="Delete plant"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              </div>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    </div>
-  </div>
-</div>
+<DrawerOrPage title={container?.name || 'Loading...'} bind:this={drawer} {actions} {content} />
 
 <!-- Delete Container Dialog -->
 {#if $deleteContainerOpen}
@@ -528,7 +532,7 @@
     </div>
 
     <p use:melt={$deleteContainerDescription} class="mt-4 text-stone-600 dark:text-stone-300">
-      Are you sure you want to delete "{container.name}"? This will also delete all plants in this
+      Are you sure you want to delete "{container?.name}"? This will also delete all plants in this
       container. This action cannot be undone.
     </p>
 

@@ -37,6 +37,7 @@
   )
 
   const selectedSpeciesId = $derived(queryParams.get('speciesId'))
+  const selectedContainerId = $derived(queryParams.get('containerId'))
 </script>
 
 <style>
@@ -53,7 +54,7 @@
     <Navigation {currentView} />
     <div class="grow min-h-0 overflow-auto min-w-0">
       {#if currentView === 'containers'}
-        <Container />
+        <Container {selectedContainerId} />
       {:else if currentView === 'species'}
         <SpeciesComponent {selectedSpeciesId} />
       {/if}

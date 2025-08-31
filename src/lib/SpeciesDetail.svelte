@@ -164,6 +164,7 @@
   }
 
   export async function openSpecies(newSpecies: Species, isPage?: boolean) {
+    if (!newSpecies) return
     species = $state.snapshot(newSpecies)
     if (isPage) {
       drawer?.openPage()
@@ -339,9 +340,9 @@
                 {@const container = plant.expand?.containers_via_plants[0]}
                 <div class="flex items-baseline justify-between">
                   <div class="flex items-baseline gap-2">
-                    <p class="font-medium">
+                    <a class="font-medium" href={`#/containers?containerId=${container.id}`}>
                       In container: {container.name || 'Unknown container'}
-                    </p>
+                    </a>
                     <p class="text-sm text-stone-500 dark:text-stone-400">
                       {plant.quantity || 1} plants
                     </p>

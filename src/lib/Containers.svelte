@@ -1,6 +1,6 @@
 <script lang="ts">
   import { pb } from './pocketbase.svelte'
-  import { onMount, onDestroy } from 'svelte'
+  import { onMount, onDestroy, untrack } from 'svelte'
   import AddContainer from './AddContainer.svelte'
   import ContainerDetails from './ContainerDetails.svelte'
   import { Droplets } from 'lucide-svelte'
@@ -8,9 +8,13 @@
   import { getContainerPlants } from './utils/container'
   import type { Container } from './types'
   import { getMostRecentPhoto, type Photo } from './utils/photos'
-  import { createDialog, melt } from '@melt-ui/svelte'
+  import { push } from 'svelte-spa-router'
 
-  let selectedContainer = $state<Container | null>(null)
+  interface Props {
+    selectedContainerId: string | null
+  }
+
+  let { selectedContainerId = null }: Props = $props()
 
   let containers = $state<Container[]>([])
   let loading = $state(true)
@@ -18,30 +22,7 @@
   let unsubscribe: (() => void) | null = $state(null)
   let scrollContainer: HTMLElement | undefined = $state(undefined)
 
-  // Create dialog for ContainerDetails
-  const {
-    elements: { content, overlay, portalled },
-    states: { open },
-  } = createDialog({
-    role: 'dialog',
-    preventScroll: true,
-    portal: '#app',
-    onOpenChange: ({ next }) => {
-      if (!next) {
-        selectedContainer = null
-      }
-      return next
-    },
-  })
-
-  // Watch for selectedContainer changes to open/close dialog
-  $effect(() => {
-    if (selectedContainer) {
-      $open = true
-    } else {
-      $open = false
-    }
-  })
+  let containerDetailDrawer: ContainerDetails | undefined = $state(undefined)
 
   async function fetchContainers() {
     try {
@@ -154,6 +135,17 @@
     }
     return thumbnails
   }
+
+  $effect(() => {
+    if (selectedContainerId) {
+      const found = containers.find((c) => c.id === selectedContainerId)
+      if (found) {
+        untrack(() => containerDetailDrawer?.openContainer(found))
+      }
+    } else {
+      untrack(() => containerDetailDrawer?.closeDrawer())
+    }
+  })
 </script>
 
 <div class="flex flex-col">
@@ -173,7 +165,7 @@
           <!-- svelte-ignore a11y_click_events_have_key_events -->
           <div
             class="bg-white dark:bg-stone-700 rounded-lg shadow-sm px-4 py-3 transform transition-all duration-200 cursor-pointer hover:shadow-md w-full text-left"
-            onclick={() => (selectedContainer = container)}
+            onclick={() => push(`/?view=containers&containerId=${container.id}`)}
           >
             <div class="flex gap-4 items-center">
               <!-- Thumbnail -->
@@ -268,15 +260,5 @@
     />
   </div>
 
-  {#if $open && selectedContainer}
-    <div use:melt={$portalled}>
-      <div use:melt={$overlay} class="hidden inset-0 bg-black/50 backdrop-blur-sm z-50"></div>
-      <div use:melt={$content} class="z-50">
-        <ContainerDetails
-          container={selectedContainer}
-          onClose={() => (selectedContainer = null)}
-        />
-      </div>
-    </div>
-  {/if}
+  <ContainerDetails bind:this={containerDetailDrawer} />
 </div>

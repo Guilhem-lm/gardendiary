@@ -3,23 +3,19 @@
   import { pb } from '../pocketbase.svelte'
   import { querystring } from 'svelte-spa-router'
   import type { Species } from '../types'
+  import { untrack } from 'svelte'
 
   let speciesDetailDrawer: SpeciesDetailDrawer | undefined = $state(undefined)
   let loading = $state(true)
   let error = $state<string | null>(null)
 
-  async function fetchSpecies() {
+  const queryParams = $derived(new URLSearchParams($querystring || ''))
+  const speciesId = $derived(queryParams.get('speciesId'))
+
+  async function fetchSpecies(speciesId: string) {
     loading = true
     error = null
     try {
-      const queryParams = new URLSearchParams($querystring || '')
-      const speciesId = queryParams.get('speciesId')
-
-      if (!speciesId) {
-        error = 'No species ID provided'
-        return
-      }
-
       const species = await pb.collection('species').getOne<Species>(speciesId, {
         expand: 'photos_via_species',
       })
@@ -38,7 +34,9 @@
 
   // Fetch species when query string changes
   $effect(() => {
-    fetchSpecies()
+    if (speciesId) {
+      untrack(() => fetchSpecies(speciesId))
+    }
   })
 </script>
 
@@ -46,6 +44,8 @@
   <p>Loading...</p>
 {:else if error}
   <p>{error}</p>
+{:else}
+  <p>No species ID provided</p>
 {/if}
 
 <SpeciesDetailDrawer bind:this={speciesDetailDrawer} />
