@@ -8,6 +8,7 @@ export interface Species extends RecordModel {
   spacing?: number
   sowing?: string[]
   transplanting?: string[]
+  harvesting?: string[] // Months when perennial plants can be harvested
   direct_sowing?: boolean
   tag?: string
   expand?: {

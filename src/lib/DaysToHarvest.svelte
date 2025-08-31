@@ -12,9 +12,46 @@
   type ComputedHarvest = {
     remainingDays: number
     totalDays: number
+    isPerennial: boolean
   }
 
   let harvest: ComputedHarvest | null = $derived.by(() => computeDaysToHarvest(container, plant))
+
+  function getHarvestPeriodInfo(species: Species): {
+    currentlyHarvesting: boolean
+    nextMonth: string | null
+  } {
+    if (!species.harvesting?.length) return { currentlyHarvesting: false, nextMonth: null }
+
+    const now = new Date()
+    const currentMonth = now.toLocaleString('default', { month: 'long' })
+    const currentlyHarvesting = species.harvesting.includes(currentMonth)
+
+    // Convert months to dates for proper comparison
+    const monthDates = species.harvesting.map((month) => {
+      const date = new Date(`${month} 1, ${now.getFullYear()}`)
+      // If month is before current month, it's next year
+      if (date < now && !currentlyHarvesting) {
+        date.setFullYear(date.getFullYear() + 1)
+      }
+      return { month, date }
+    })
+
+    // Sort by closest future date
+    monthDates.sort((a, b) => a.date.getTime() - b.date.getTime())
+
+    // If we're harvesting now, no need for next month
+    if (currentlyHarvesting) {
+      return { currentlyHarvesting: true, nextMonth: null }
+    }
+
+    // Find the next month that's in the future
+    const nextDate = monthDates.find((m) => m.date > now)
+    return {
+      currentlyHarvesting: false,
+      nextMonth: nextDate ? nextDate.month : monthDates[0].month,
+    }
+  }
 
   function computeDaysToHarvest(
     targetContainer?: Container,
@@ -27,7 +64,31 @@
 
     for (const plantItem of list) {
       const sp: Species | undefined = plantItem.expand?.species
-      const totalDays = sp?.days_to_harvest
+      if (!sp) continue
+
+      // Check for perennial first
+      if (sp.harvesting?.length) {
+        const { currentlyHarvesting, nextMonth } = getHarvestPeriodInfo(sp)
+        if (currentlyHarvesting) {
+          // Currently in harvest period
+          candidates.push({ remainingDays: 0, totalDays: 30, isPerennial: true })
+          continue
+        } else if (nextMonth) {
+          // Calculate days until next harvest month
+          const nextHarvestDate = new Date(`${nextMonth} 1, ${now.getFullYear()}`)
+          // If the next harvest month is earlier in the year, it's next year
+          if (nextHarvestDate < now) {
+            nextHarvestDate.setFullYear(now.getFullYear() + 1)
+          }
+          const diffMs = nextHarvestDate.getTime() - now.getTime()
+          const remainingDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+          candidates.push({ remainingDays, totalDays: remainingDays, isPerennial: true }) // Use actual days for better progress
+          continue
+        }
+      }
+
+      // Fall back to days_to_harvest for annuals
+      const totalDays = sp.days_to_harvest
       if (!totalDays || totalDays <= 0) continue
 
       // Prefer explicit sowing date if present, else fall back to record creation date
@@ -43,7 +104,7 @@
       const diffMs = harvestDate.getTime() - now.getTime()
       const remainingDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
 
-      candidates.push({ remainingDays, totalDays })
+      candidates.push({ remainingDays, totalDays, isPerennial: false })
     }
 
     if (candidates.length === 0) return null
@@ -78,13 +139,37 @@
         <div
           class="absolute inset-[1px] bg-white dark:bg-stone-700 rounded-sm text-xs flex items-center justify-center gap-2 px-1"
         >
-          {#if harvest.remainingDays > 0}
-            <HandCoins size={12} />
-            <span class="text-xs"
-              >in
-              {harvest.remainingDays} days
-            </span>
-          {/if}
+          <HandCoins size={12} />
+          <span class="text-xs">
+            {#if plant?.expand?.species?.harvesting}
+              {#if harvest.remainingDays <= 0}
+                harvest now
+              {:else}
+                {new Date(Date.now() + harvest.remainingDays * 24 * 60 * 60 * 1000).toLocaleString(
+                  'default',
+                  { month: 'short' }
+                )}
+              {/if}
+            {:else if container}
+              {#if harvest.isPerennial}
+                {#if harvest.remainingDays <= 0}
+                  harvest now
+                {:else}
+                  {new Date(
+                    Date.now() + harvest.remainingDays * 24 * 60 * 60 * 1000
+                  ).toLocaleString('default', { month: 'short' })}
+                {/if}
+              {:else if harvest.remainingDays <= 0}
+                ready
+              {:else}
+                in {harvest.remainingDays}d
+              {/if}
+            {:else if harvest.remainingDays <= 0}
+              ready
+            {:else}
+              in {harvest.remainingDays}d
+            {/if}
+          </span>
         </div>
       </div>
     </div>

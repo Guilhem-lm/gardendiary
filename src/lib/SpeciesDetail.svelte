@@ -80,6 +80,7 @@
       formData.spacing !== (species.spacing || 0) ||
       JSON.stringify(formData.sowing) !== JSON.stringify(species.sowing || []) ||
       JSON.stringify(formData.transplanting) !== JSON.stringify(species.transplanting || []) ||
+      JSON.stringify(formData.harvesting) !== JSON.stringify(species.harvesting || []) ||
       formData.direct_sowing !== (species.direct_sowing || false) ||
       formData.tag !== (species.tag || '')
     )
@@ -302,12 +303,12 @@
           <!-- Transplanting Months -->
           {#if species.transplanting && species.transplanting.length > 0}
             <div class="flex items-start gap-2">
-              <span class="font-medium">Transplanting:</span>
+              <span class="font-semibold text-stone-600 dark:text-stone-300">Transplanting:</span>
 
               <div class="flex flex-wrap gap-1">
                 {#each species.transplanting as month}
                   <div
-                    class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xs font-medium text-blue-700 dark:text-blue-300"
+                    class="h-5 rounded-md bg-stone-700 dark:bg-stone-300 flex items-center justify-center text-xs font-medium dark:text-stone-700 text-stone-200 px-1"
                   >
                     {month.slice(0, 3)}
                   </div>
@@ -316,6 +317,23 @@
             </div>
           {:else}
             <span class="font-semibold text-stone-600 dark:text-stone-300">Direct sowing</span>
+          {/if}
+
+          <!-- Harvesting Months (for perennials) -->
+          {#if species.harvesting && species.harvesting.length > 0}
+            <div class="flex items-start gap-2">
+              <span class="font-semibold text-stone-600 dark:text-stone-300">Harvesting:</span>
+
+              <div class="flex flex-wrap gap-1">
+                {#each species.harvesting as month}
+                  <div
+                    class="h-5 rounded-md bg-lime-100 dark:bg-lime-800 flex items-center justify-center text-xs px-1 font-medium text-stone-700 dark:text-stone-200"
+                  >
+                    {month.slice(0, 3)}
+                  </div>
+                {/each}
+              </div>
+            </div>
           {/if}
         </div>
       </div>
@@ -477,6 +495,33 @@
                       formData!.transplanting = [...formData!.transplanting!, month]
                     } else {
                       formData!.transplanting = formData!.transplanting!.filter(
+                        (m: string) => m !== month
+                      )
+                    }
+                  }}
+                  class="rounded"
+                />
+                <span class="text-sm">{month.slice(0, 3)}</span>
+              </label>
+            {/each}
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <span class="block text-sm font-medium">Harvesting Months (for perennials)</span>
+          <div class="grid grid-cols-3 gap-2">
+            {#each ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'] as month}
+              <label class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  value={month}
+                  checked={formData!.harvesting?.includes(month)}
+                  onchange={(e) => {
+                    const target = e.target as HTMLInputElement
+                    if (target.checked) {
+                      formData!.harvesting = [...(formData!.harvesting || []), month]
+                    } else {
+                      formData!.harvesting = (formData!.harvesting || []).filter(
                         (m: string) => m !== month
                       )
                     }
